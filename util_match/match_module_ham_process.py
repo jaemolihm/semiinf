@@ -51,7 +51,8 @@ def block_diag_expm(mat, rng_list):
     return exp_mat
 
 
-def run_opt_diagonly(tbbulk, tbslab, do_unit_orbital=True, max_iter=None):
+def run_opt_diagonly(tbbulk, tbslab, do_unit_orbital=True, max_iter=None,
+                     init_spin_corrected=True):
     nk_s = tbslab['nk']
     nw_s = tbslab['nw']
     nk_b = tbbulk['nk']
@@ -63,7 +64,7 @@ def run_opt_diagonly(tbbulk, tbslab, do_unit_orbital=True, max_iter=None):
 
     # setup index match, H1, H2, use set values if done before.
     set_index_match(tbbulk, tbslab)
-    H1, H2 = setup_H1_and_H2(tbbulk, tbslab)
+    H1, H2 = setup_H1_and_H2(tbbulk, tbslab, init_spin_corrected=init_spin_corrected)
 
     U = [np.asmatrix(np.eye(tbslab['nw_match']), dtype=complex) for i in range(nk_s)]
 
@@ -141,29 +142,24 @@ def run_opt_diagonly(tbbulk, tbslab, do_unit_orbital=True, max_iter=None):
                   f"dobj_q={dobj_q:.1E}, dobj_p={dobj_p:.1E}", flush=True)
     if verbose: print("end iterative minimization", flush=True)
     obj_list = [x + obj_offset for x in obj_list]
+  
 
-    tbslab['hk_ham'] = [x.copy() for x in tbslab['hk']]
     sl_c = tbslab['iw_match']
     sl_h = slice(tbslab['iw_head']-tbslab['nw_match_add'], tbslab['iw_head'])
     sl_t = slice(tbslab['iw_tail'], tbslab['iw_tail']+tbslab['nw_match_add'])
     sl_Uc = slice(0, nw_b)
     sl_Uh = slice(nw_b, nw_b + tbslab['nw_match_add'])
     sl_Ut = slice(nw_b + tbslab['nw_match_add'], nw_b + 2*tbslab['nw_match_add'])
-    Umat = U[0]
-    for ik in range(nk_s):
-        # U has no ik dependence
-        if np.linalg.norm(Umat - U[ik]) > 1E-10: raise ValueError
-        # use the fact that U is block-diagonal
-        if np.linalg.norm(Umat[sl_Uc,sl_Uh]) > 1E-10: raise ValueError
-        if np.linalg.norm(Umat[sl_Uc,sl_Ut]) > 1E-10: raise ValueError
-        if np.linalg.norm(Umat[sl_Uh,sl_Ut]) > 1E-10: raise ValueError
-        for sl_slab, sl_U in zip([sl_c, sl_h, sl_t], [sl_Uc, sl_Uh, sl_Ut]):
+    u_rotate = np.eye(tbslab['nw'], dtype=complex)
+    u_rotate[sl_c, sl_c] = U[0][sl_Uc, sl_Uc]
+    u_rotate[sl_h, sl_h] = U[0][sl_Uh, sl_Uh]
+    u_rotate[sl_t, sl_t] = U[0][sl_Ut, sl_Ut]
+    u_rotate = np.asmatrix(u_rotate)
 
-            tbslab['hk_ham'][ik][sl_slab,:] = (Umat[sl_U,sl_U].H
-                * tbslab['hk_ham'][ik][sl_slab,:])
-            tbslab['hk_ham'][ik][:,sl_slab] = (tbslab['hk_ham'][ik][:,sl_slab]
-                * Umat[sl_U,sl_U])
-    
+    if init_spin_corrected:
+        tbslab['hk_ham'] = [u_rotate.H * x * u_rotate for x in tbslab['hk_spn']]
+    else:
+        tbslab['hk_ham'] = [u_rotate.H * x * u_rotate for x in tbslab['hk']]
     tbslab['hr_ham'] = overlap_uk_to_ur(tbslab['hk_ham'], tbslab, minussign=True)
     tbslab['hr_ham_all'] = overlap_uk_to_ur_allrvec(tbslab['hk_ham'], tbslab, minussign=True)
     return obj_list, is_converged
@@ -242,7 +238,7 @@ def set_index_match(tbbulk, tbslab):
     tbbulk['ind_bulk_match'] = ind_bulk_match
     tbbulk['ind_layer_match'] = ind_layer_match
 
-def setup_H1_and_H2(tbbulk, tbslab):
+def setup_H1_and_H2(tbbulk, tbslab, init_spin_corrected):
     nw_match = tbslab['nw_match']
     ind_slab_match = tbslab['ind_slab_match']
     ind_bulk_match = tbbulk['ind_bulk_match']
@@ -268,7 +264,10 @@ def setup_H1_and_H2(tbbulk, tbslab):
 
 
     H1 = [np.asmatrix(x) for x in H1]
-    H2 = [x[np.ix_(ind_slab_match, ind_slab_match)] for x in tbslab['hk']]
+    if init_spin_corrected:
+        H2 = [x[np.ix_(ind_slab_match, ind_slab_match)] for x in tbslab['hk_spn']]
+    else:
+        H2 = [x[np.ix_(ind_slab_match, ind_slab_match)] for x in tbslab['hk']]
     return H1, H2
 
 

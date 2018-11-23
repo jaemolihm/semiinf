@@ -47,3 +47,4 @@ def ham_maximal_hopping(tbbulk, tbslab):
     return max(intra_max_list), max(inter_max_list)
 
 
+

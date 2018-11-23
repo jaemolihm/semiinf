@@ -3,7 +3,7 @@ import numpy as np
 def setup_input():
     # input parameters #
     material = 'GeTe'
-    path = './'
+    path = './GeTe.5layer_1vac.conv9/'
 
     input_params = {}
 
@@ -11,7 +11,7 @@ def setup_input():
     input_params['seedname_s'] = 'GeTe.slab'
     input_params['isspinor'] = True
 
-    input_params['iatm_add'] = 4
+    input_params['iatm_add'] = 2
     input_params['nbnd_s'] = 310
     input_params['nw_s'] = 248
     input_params['nklist_s'] = np.array([7,7,1])

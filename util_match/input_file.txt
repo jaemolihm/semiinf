@@ -1,0 +1,24 @@
+material = GeTe
+path = GeTe.5layer_1vac.conv9/
+
+iatm_add = 2
+isspinor = True
+
+seedname_b = GeTe.bulk
+seedname_s = GeTe.slab
+
+nbnd_s   = 310
+nw_s     = 248
+nbnd_b   = 60
+
+nw_b     = 48
+iw_head  = 104
+iw_tail  = 152
+
+nklist_s = 7 7 1
+nklist_b = 7 7 6
+
+norbital_list = 8 8 8 8 8 8
+
+alat_s = 4.177748, 0.000000,  0.000000, -2.088874, 3.618036,  0.000000, 0.000000, 0.000000, 62.869262
+alat_b = 4.177748, 0.000000,  0.000000, -2.088874, 3.618036,  0.000000, 0.000000, 0.000000, 10.478210

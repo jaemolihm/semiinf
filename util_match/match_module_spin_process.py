@@ -280,7 +280,7 @@ def set_manual_bulk_slab_pair(tbbulk, tbslab, iw_head, iw_tail):
     tbslab['iws_to_iwb'] = {}
     for i in range(tbslab['nw']):
         tbslab['iws_to_iwb'][i] = (i - tbslab['iw_head']) % tbbulk['nw']
-    if 'GeTe.5layer_1vac.conv9' in path:
+    if (tbbulk['material'] == 'GeTe') & ('5layer_1vac.conv9' in path):
         tbslab['iws_to_iwb'][112] = 10
         tbslab['iws_to_iwb'][113] = 11
         tbslab['iws_to_iwb'][114] = 8

@@ -12,30 +12,30 @@ from match_module_ham_process import run_opt_diagonly
 from match_module_ham_mismatch import (ham_mismatch_intra, ham_mismatch_inter,
                                        ham_maximal_hopping)
 
-def write_hr_dat(tbslab, hr_type, postfix="hr_match"):
-    hr_filehame = tbslab['path'] + tbslab['seedname'] + '_'+postfix+'.dat'
-    assert len(tbslab[hr_type]) == tbslab['nrpts_all']
-    assert tbslab[hr_type][0].shape == (tbslab['nw'], tbslab['nw'])
+def write_hr_dat(tbdict, hr_type, postfix="hr_match"):
+    hr_filehame = tbdict['path'] + tbdict['seedname'] + '_'+postfix+'.dat'
+    assert len(tbdict[hr_type]) == tbdict['nrpts_all']
+    assert tbdict[hr_type][0].shape == (tbdict['nw'], tbdict['nw'])
 
     with open(hr_filehame, 'w') as f:
         header = 'written by match_main.py at ' + strftime("%a, %d %b %Y %H:%M:%S +0000", localtime()) + '\n'
 
         f.write(header) # Date and time
-        f.write(f"{tbslab['nw']:10d}\n")
-        f.write(f"{tbslab['nrpts_all']:10d}")
-        for ir in range(tbslab['nrpts_all']):
+        f.write(f"{tbdict['nw']:10d}\n")
+        f.write(f"{tbdict['nrpts_all']:10d}")
+        for ir in range(tbdict['nrpts_all']):
             if ir % 15 == 0: f.write("\n")
-            f.write(f"{tbslab['ndegen_all'][ir]:5d}")
+            f.write(f"{tbdict['ndegen_all'][ir]:5d}")
         f.write("\n")
-        for ir in range(tbslab['nrpts_all']):
-            for iw in range(tbslab['nw']):
-                for jw in range(tbslab['nw']):
-                    f.write(f"{tbslab['rvec_all'][0,ir]:5d}"
-                            f"{tbslab['rvec_all'][1,ir]:5d}"
-                            f"{tbslab['rvec_all'][2,ir]:5d}"
+        for ir in range(tbdict['nrpts_all']):
+            for iw in range(tbdict['nw']):
+                for jw in range(tbdict['nw']):
+                    f.write(f"{tbdict['rvec_all'][0,ir]:5d}"
+                            f"{tbdict['rvec_all'][1,ir]:5d}"
+                            f"{tbdict['rvec_all'][2,ir]:5d}"
                             f"{jw+1:5d}{iw+1:5d}"
-                            f"{tbslab[hr_type][ir][jw,iw].real:12.6f}"
-                            f"{tbslab[hr_type][ir][jw,iw].imag:12.6f}")
+                            f"{tbdict[hr_type][ir][jw,iw].real:12.6f}"
+                            f"{tbdict[hr_type][ir][jw,iw].imag:12.6f}")
                     f.write("\n")
 
 ################
@@ -120,6 +120,7 @@ with open(path+'out_match_minimization.txt', 'w') as f:
         f.write(f"{i:5d} {obj_list[i]:.10f}\n")
 
 # save output hamiltonian as text file
+write_hr_dat(tbbulk, 'hr_all', postfix='hr')
 write_hr_dat(tbslab, 'hr_all', postfix='hr_nocorr')
 write_hr_dat(tbslab, 'hr_spn_all', postfix='hr_minimal')
 write_hr_dat(tbslab, 'hr_ham_all', postfix='hr_ham')

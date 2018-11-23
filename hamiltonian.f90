@@ -97,15 +97,15 @@ SUBROUTINE hamiltonian_set_hij()
     ELSE IF (isslab_match) THEN
         CALL k_operator(nrpts0, hr0, rvec0, ndegen0, kx, ky, h11)
         CALL k_operator(nrpts1, hr1, rvec1, ndegen1, kx, ky, h12)
-        ! shift diagonal elements of bulk hamiltonian using bulk_shift
-        ! to match bulk and slab energy reference
-        DO i=1,nbulk
-            h11(i,i) = h11(i,i) + bulk_shift
-        END DO
         ALLOCATE(htemp(num_hr_wann,num_hr_wann))
         CALL k_operator(nrpts0s, hr0s, rvec0s, ndegen0s, kx, ky, htemp)
         h00 = htemp(ind_0, ind_0)
         h01 = htemp(ind_0, ind_1)
+        ! shift diagonal elements of bulk hamiltonian using bulk_shift
+        ! to match bulk and slab energy reference
+        DO i=1,nsurf
+            h00(i,i) = h00(i,i) - bulk_shift
+        END DO
         DEALLOCATE(htemp)
     ELSE !.NOT. isslab, .NOT. isslab_hamil, .NOT. isslab_match
         CALL k_operator(nrpts0, hr0, rvec0, ndegen0, kx, ky, h11)

@@ -82,19 +82,19 @@ def tb_read_data(material, path, isbulk, input_params):
     nbnd = tbdict['nbnd']
     path_seedname = tbdict['path'] + tbdict['seedname']
 
-    # uloc_temp = read_matlist(path_seedname+'_u_matrix.bin', nw, nw)
-    # udis_temp = read_matlist(path_seedname+'_u_matrix_opt.bin', nbnd, nw)
+    uloc_temp = read_matlist(path_seedname+'_u_matrix.bin', nw, nw)
+    udis_temp = read_matlist(path_seedname+'_u_matrix_opt.bin', nbnd, nw)
 
-    # # if some bands are excluded from outer window in w90
-    # if 'nw_exclude' in tbdict.keys():
-    #     if not all([np.linalg.norm(x[-tbdict['nw_exclude']:,:])<1E-6 for x in udis_temp]):
-    #         exit("Something's wrong with nw_exclude")
-    #     for iks in range(len(udis_temp)):
-    #         udis_temp[iks] = np.append(udis_temp[iks][-tbdict['nw_exclude']:,:],
-    #                                 udis_temp[iks][0:-tbdict['nw_exclude'],:], axis=0)
+    # if some bands are excluded from outer window in w90
+    if 'nw_exclude' in tbdict.keys():
+        if not all([np.linalg.norm(x[-tbdict['nw_exclude']:,:])<1E-6 for x in udis_temp]):
+            exit("Something's wrong with nw_exclude")
+        for iks in range(len(udis_temp)):
+            udis_temp[iks] = np.append(udis_temp[iks][-tbdict['nw_exclude']:,:],
+                                    udis_temp[iks][0:-tbdict['nw_exclude'],:], axis=0)
 
-    # tbdict['umat'] = [dismat * locmat for dismat, locmat 
-    #                   in zip(udis_temp, uloc_temp)]
+    tbdict['umat'] = [dismat * locmat for dismat, locmat 
+                      in zip(udis_temp, uloc_temp)]
     # uloc_temp = None; udis_temp = None
 
     tbdict['hr'] = read_matlist(path_seedname+'_hr.bin', nw, nw)
@@ -154,110 +154,14 @@ def tb_read_data(material, path, isbulk, input_params):
     tbdict['ir_origin'] = np.where((tbdict['rvec'][0,:] == 0)
                                  & (tbdict['rvec'][1,:] == 0)
                                  & (tbdict['rvec'][2,:] == 0))[0].item()
+    tbdict['ir_origin_all'] = np.where((tbdict['rvec_all'][0,:] == 0)
+                                 & (tbdict['rvec_all'][1,:] == 0)
+                                 & (tbdict['rvec_all'][2,:] == 0))[0].item()
     tbdict['nrpts'] = len(tbdict['hr'])
     tbdict['ndegen'] = None
 
     # print("end reading")
     return tbdict
-
-# def overlap_read_data(tbbulk, tbslab, wholebulk=False):
-#     # read binary files
-#     tboverlapdict = {}
-
-#     # read overlap matrix between Kohn-Sham eigenstates from file
-#     path = tbbulk['path']
-#     overlap_sb = read_matlist(path+'../overlap.bin', tbslab['nbnd'], tbbulk['nbnd'])
-#     overlap = [np.conjugate(x.transpose()) for x in overlap_sb]
-
-#     # find correspondence between ikb and iks k-points
-#     ikb_to_iks = []
-#     for ikb in range(tbbulk['nk']):
-#         for iks in range(tbslab['nk']):
-#             if np.linalg.norm(tbslab['kvec'][0:2,iks]
-#                              - tbbulk['kvec'][0:2,ikb]) < 1E-6:
-#                 ikb_to_iks.append(iks)
-#                 continue
-#     iks_to_ikb = {}
-#     for iks in range(tbslab['nk']):
-#         iks_to_ikb[iks] = tuple([ikb for ikb, iks_target in enumerate(ikb_to_iks)
-#                                  if iks == iks_target])
-
-#     # Apply wannierization unitary matrix to overlap matrix between 
-#     # Kohn-Sham eigenstates to get overlap between Wannier functions
-#     nw_b = tbbulk['nw']
-#     if wholebulk:
-#         rvecz = [-1, 0, 1]
-#         uk_overlap = []
-#         for iks in range(tbslab['nk']):
-#             overlap_iks = np.zeros((len(rvecz)*nw_b, tbslab['nw']), dtype=complex)
-#             for irz in range(len(rvecz)):
-#                 for ikb in iks_to_ikb[iks]:
-#                     phase = np.exp(1j*2*np.pi*tbbulk['kvec'][2,ikb] * rvecz[irz])
-#                     overlap_iks[irz*nw_b:(irz+1)*nw_b] += (phase 
-#                         * tbbulk['umat'][ikb].H * (overlap[ikb] * tbslab['umat'][iks]))
-#             overlap_iks /= np.sqrt(tbbulk['nk']/tbslab['nk'])
-#             # u, s, v = np.linalg.svd(overlap_iks, full_matrices=0)
-#             # uk_overlap.append((np.asmatrix(u) * np.asmatrix(v)).H)
-#             uk_overlap.append(np.asmatrix(overlap_iks).H)
-#     else: # not wholebulk
-#         uk_overlap = []
-#         uk_overlap_h = []
-#         uk_overlap_t = []
-#         nw_add = tbslab['nw_match_add']
-#         for iks in range(tbslab['nk']):
-#             overlap_iks = np.zeros((tbbulk['nw'], tbslab['nw']), dtype=complex)
-#             for ikb in iks_to_ikb[iks]:
-#                 phase = np.exp(1j*2*np.pi*tbbulk['kvec'][2,ikb] * 0)
-#                 overlap_iks += (phase * tbbulk['umat'][ikb].H * 
-#                                         (overlap[ikb] * tbslab['umat'][iks]))
-#             overlap_iks /= np.sqrt(tbbulk['nk']/tbslab['nk'])
-#             uk_overlap.append(np.asmatrix(overlap_iks).H)
-#             # upper slab
-#             overlap_iks = np.zeros((nw_add, tbslab['nw']), dtype=complex)
-#             for ikb in iks_to_ikb[iks]:
-#                 phase = np.exp(1j*2*np.pi*tbbulk['kvec'][2,ikb] * 1)
-#                 overlap_iks += (phase * (tbbulk['umat'][ikb][:,-nw_add:]).H * 
-#                                         (overlap[ikb] * tbslab['umat'][iks]))
-#             overlap_iks /= np.sqrt(tbbulk['nk']/tbslab['nk'])
-#             uk_overlap_h.append(np.asmatrix(overlap_iks).H)
-#             # lower slab
-#             overlap_iks = np.zeros((nw_add, tbslab['nw']), dtype=complex)
-#             for ikb in iks_to_ikb[iks]:
-#                 phase = np.exp(1j*2*np.pi*tbbulk['kvec'][2,ikb] * -1)
-#                 overlap_iks += (phase * (tbbulk['umat'][ikb][:,:nw_add]).H * 
-#                                         (overlap[ikb] * tbslab['umat'][iks]))
-#             overlap_iks /= np.sqrt(tbbulk['nk']/tbslab['nk'])
-#             uk_overlap_t.append(np.asmatrix(overlap_iks).H)
-        
-#     # Fourier transform uk_overlap to ur_overlap
-#     ur_overlap = []
-#     for ir in range(tbslab['nrpts']):
-#         ur_overlap.append(np.asmatrix(np.zeros(uk_overlap[0].shape, dtype=complex)))
-#         for iks in range(tbslab['nk']):
-#             rdotk = sum([r * k for r, k in zip(tbslab['rvec'][:,ir], tbslab['kvec'][:,iks])])
-#             ur_overlap[-1] += uk_overlap[iks] * np.exp(1j * 2 * np.pi * rdotk)
-#         ur_overlap[-1] /= tbslab['nk']
-
-#     tboverlapdict['overlap'] = overlap
-#     tboverlapdict['ikb_to_iks'] = ikb_to_iks
-#     tboverlapdict['iks_to_ikb'] = iks_to_ikb
-#     tboverlapdict['uk'] = uk_overlap
-#     tboverlapdict['uk_head'] = uk_overlap_h
-#     tboverlapdict['uk_tail'] = uk_overlap_t
-#     tboverlapdict['ur'] = ur_overlap
-
-    
-#     if wholebulk:
-#         raise ValueError # implementation not verified
-#         tboverlapdict['iden'] = np.asmatrix(np.sign(tboverlapdict['ur'][tbslab['ir_origin']])
-#                                             *(abs(tboverlapdict['ur'][tbslab['ir_origin']])>0.8  ))
-#     else:
-#         iden1 = np.zeros((tbslab['iw_head'], tbbulk['nw']), dtype=complex)
-#         iden2 = np.eye(tbbulk['nw'], dtype=complex)
-#         iden3 = np.zeros((tbslab['nw']-tbslab['iw_tail'], tbbulk['nw']), dtype=complex)
-#         tboverlapdict['iden'] = np.asmatrix(np.concatenate((iden1, iden2, iden3), axis=0))
-
-#     return tboverlapdict
 
 def tb_shift_fermi(tb1, tb2):
     efermi_1 = np.average(np.diag(tb1['hr'][tb1['ir_origin']]
@@ -268,44 +172,6 @@ def tb_shift_fermi(tb1, tb2):
     for hk_mat in tb2['hk']:
         hk_mat += (efermi_1 - efermi_2) * np.eye(tb2['nw'])
 
-# def update_umat_s(tbbulk, tbslab, tboverlap, addpath):
-#     tbslab_new = copy.deepcopy(tbslab)
-#     tboverlap_new = copy.deepcopy(tboverlap)
-
-#     # update tbslab
-#     path_seedname = tbslab['path'] + addpath + tbslab['seedname']
-#     uloc_temp = read_matlist(path_seedname+'_u_matrix.bin', tbslab['nw'], tbslab['nw'])
-#     udis_temp = read_matlist(path_seedname+'_u_matrix_opt.bin', tbslab['nbnd'], tbslab['nw'])
-    
-#     # if some bands are excluded from outer window in w90
-#     if 'nw_exclude' in tbdict.keys():
-#         if not all([np.linalg.norm(x[-tbdict['nw_exclude']:,:])<1E-6 for x in udis_temp]):
-#             exit("Something's wrong with nw_exclude")
-#         for iks in range(len(udis_temp)):
-#             udis_temp[iks] = np.append(udis_temp[iks][-tbdict['nw_exclude']:,:],
-#                                     udis_temp[iks][0:-tbdict['nw_exclude'],:], axis=0)
-    
-#     tbslab_new['umat'] = [dismat * locmat for dismat, locmat 
-#                       in zip(udis_temp, uloc_temp)]
-#     uloc_temp = None; udis_temp = None
-
-
-#     # update overlap
-#     overlap = tboverlap['overlap']
-#     uk_overlap = []
-#     for iks in range(tbslab['nk']):
-#         overlap_iks = np.zeros((tbbulk['nw'], tbslab['nw']), dtype=complex)
-#         for ikb in tboverlap['iks_to_ikb'][iks]:
-#             overlap_iks += tbbulk['umat'][ikb].H * (overlap[ikb] * tbslab_new['umat'][iks])
-#         u, s, v = np.linalg.svd(overlap_iks, full_matrices=0)
-#         uk_overlap.append((np.asmatrix(u) * np.asmatrix(v)).H)
-
-#     ur_overlap = overlap_uk_to_ur(uk_overlap, tbslab)
-
-#     tboverlap_new['uk'] = uk_overlap
-#     tboverlap_new['ur'] = ur_overlap
-
-#     return tbslab_new, tboverlap_new
 
 def tb_sort_wcenter(tbbulk, tbslab):
     # sort wf indices using their center position to prevent swapping
@@ -400,71 +266,71 @@ def overlap_uk_to_ur_allrvec(mat_k_list, tbslab, minussign=False):
         mat_r_list[-1] /= tbslab['nk']
     return mat_r_list
 
-# def read_unkg(tbdict):
-#     N_SIG = 7
-#     # read and calculate signature
-#     nbnd = tbdict['nbnd']
-#     nw = tbdict['nw']
-#     ikgamma = tbdict['ik_gamma']
-#     isspinor = tbdict['isspinor']
+def read_unkg(tbdict):
+    N_SIG = 7
+    # read and calculate signature
+    nbnd = tbdict['nbnd']
+    nw = tbdict['nw']
+    ikgamma = tbdict['ik_gamma']
+    isspinor = tbdict['isspinor']
 
-#     g_abc = [[ 0, 0, 0],
-#              [ 1, 0, 0],
-#              [-1, 0, 0],
-#              [ 0, 1, 0],
-#              [ 0,-1, 0],
-#              [ 0, 0, 1],
-#              [ 0, 0,-1]]
-#     g_abc_to_isig = {}
-#     for isig in range(N_SIG):
-#         g_abc_to_isig[tuple(g_abc[isig])] = isig
+    g_abc = [[ 0, 0, 0],
+             [ 1, 0, 0],
+             [-1, 0, 0],
+             [ 0, 1, 0],
+             [ 0,-1, 0],
+             [ 0, 0, 1],
+             [ 0, 0,-1]]
+    g_abc_to_isig = {}
+    for isig in range(N_SIG):
+        g_abc_to_isig[tuple(g_abc[isig])] = isig
 
-#     if isspinor: unkg = np.empty((nbnd, N_SIG, 2), dtype=complex)
-#     if not isspinor: unkg = np.empty((nbnd, N_SIG, 1), dtype=complex)
+    if isspinor: unkg = np.empty((nbnd, N_SIG, 2), dtype=complex)
+    if not isspinor: unkg = np.empty((nbnd, N_SIG, 1), dtype=complex)
 
-#     is_spin_up = True # used only if isspinor==True
-#     with open(tbdict['path']+'../'+tbdict['seedname']+'.unkg', 'r') as f:
-#         lines = f.readlines()
-#         for line in lines[1:]:
-#             line2 = line.split()
-#             g_abc_tuple = tuple([int(x) for x in line2[2:5]])
-#             if g_abc_tuple in g_abc_to_isig.keys():
-#                 isig = g_abc_to_isig[g_abc_tuple]
-#                 if isspinor and is_spin_up:
-#                     unkg[int(line2[0])-1, isig, 0] = float(line2[-2]) + 1j*float(line2[-1])
-#                     is_spin_up = False
-#                 elif isspinor:
-#                     unkg[int(line2[0])-1, isig, 1] = float(line2[-2]) + 1j*float(line2[-1])
-#                     is_spin_up = True
-#                 else:
-#                     unkg[int(line2[0])-1, isig, 0] = float(line2[-2]) + 1j*float(line2[-1])
+    is_spin_up = True # used only if isspinor==True
+    with open(tbdict['path']+tbdict['seedname']+'.unkg', 'r') as f:
+        lines = f.readlines()
+        for line in lines[1:]:
+            line2 = line.split()
+            g_abc_tuple = tuple([int(x) for x in line2[2:5]])
+            if g_abc_tuple in g_abc_to_isig.keys():
+                isig = g_abc_to_isig[g_abc_tuple]
+                if isspinor and is_spin_up:
+                    unkg[int(line2[0])-1, isig, 0] = float(line2[-2]) + 1j*float(line2[-1])
+                    is_spin_up = False
+                elif isspinor:
+                    unkg[int(line2[0])-1, isig, 1] = float(line2[-2]) + 1j*float(line2[-1])
+                    is_spin_up = True
+                else:
+                    unkg[int(line2[0])-1, isig, 0] = float(line2[-2]) + 1j*float(line2[-1])
 
-#     alat_inv = np.linalg.inv(tbdict['alat'])
-#     if isspinor: sig = np.zeros((nw, N_SIG, 2), dtype=complex)
-#     if not isspinor: sig = np.zeros((nw, N_SIG, 1), dtype=complex)
-#     for iw in range(nw):
-#         for ib in range(nbnd):
-#             sig[iw, :, :] += tbdict['umat'][tbdict['ik_gamma']][ib,iw] * unkg[ib, :, :]
+    alat_inv = np.linalg.inv(tbdict['alat'])
+    if isspinor: sig = np.zeros((nw, N_SIG, 2), dtype=complex)
+    if not isspinor: sig = np.zeros((nw, N_SIG, 1), dtype=complex)
+    for iw in range(nw):
+        for ib in range(nbnd):
+            sig[iw, :, :] += tbdict['umat'][tbdict['ik_gamma']][ib,iw] * unkg[ib, :, :]
     
-#     tbdict['g_dot_wffrac'] = np.zeros((nw,N_SIG))
-#     for iw in range(nw):
-#         wf_frac = np.dot(alat_inv, tbdict['wfcenter'][:,iw])
-#         for isig in range(N_SIG):
-#             tbdict['g_dot_wffrac'][iw,isig] = sum(np.multiply(g_abc[isig], wf_frac))
-#             phase_factor = np.exp(-1j*2*np.pi*sum(np.multiply(g_abc[isig], wf_frac)))
-#             sig[iw,isig] *= phase_factor
+    tbdict['g_dot_wffrac'] = np.zeros((nw,N_SIG))
+    for iw in range(nw):
+        wf_frac = np.dot(alat_inv, tbdict['wfcenter'][:,iw])
+        for isig in range(N_SIG):
+            tbdict['g_dot_wffrac'][iw,isig] = sum(np.multiply(g_abc[isig], wf_frac))
+            phase_factor = np.exp(-1j*2*np.pi*sum(np.multiply(g_abc[isig], wf_frac)))
+            sig[iw,isig] *= phase_factor
     
-#     if isspinor: sig_real = np.zeros((nw, N_SIG, 2), dtype=complex)
-#     if not isspinor: sig_real = np.zeros((nw, N_SIG, 1), dtype=complex)
-#     sig_real[:,0,:] = sig[:,0,:]
-#     for isig in range(1, N_SIG//2+1):
-#         # cos(x), cos(y), cos(z)
-#         sig_real[:,2*isig-1, :] = (sig[:, 2*isig-1, :] + sig[:, 2*isig, :])/2
-#         # sin(x), sin(y), sin(z)
-#         sig_real[:,2*isig-1, :] = (sig[:, 2*isig-1, :] - sig[:, 2*isig, :])/(2*1j)
+    if isspinor: sig_real = np.zeros((nw, N_SIG, 2), dtype=complex)
+    if not isspinor: sig_real = np.zeros((nw, N_SIG, 1), dtype=complex)
+    sig_real[:,0,:] = sig[:,0,:]
+    for isig in range(1, N_SIG//2+1):
+        # cos(x), cos(y), cos(z)
+        sig_real[:,2*isig-1, :] = (sig[:, 2*isig-1, :] + sig[:, 2*isig, :])/2
+        # sin(x), sin(y), sin(z)
+        sig_real[:,2*isig-1, :] = (sig[:, 2*isig-1, :] - sig[:, 2*isig, :])/(2*1j)
 
-#     tbdict['unkg'] = unkg
-#     tbdict['sig'] = sig_real
+    tbdict['unkg'] = unkg
+    tbdict['sig'] = sig_real
 
 
 def tb_correct_data(tbbulk, tbslab):

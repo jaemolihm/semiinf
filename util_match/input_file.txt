@@ -9,9 +9,12 @@ seedname_s = GeTe.slab
 
 nbnd_s   = 310
 nw_s     = 248
-nbnd_b   = 60
+#nw_exclude_s = 80
 
+nbnd_b   = 60
 nw_b     = 48
+#nw_exclude_b = 30
+
 iw_head  = 104
 iw_tail  = 152
 

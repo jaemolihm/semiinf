@@ -4,7 +4,7 @@ import numpy as np
 import numpy.matlib
 import scipy.linalg
 
-from match_input import setup_input
+from match_read_input import setup_input
 from match_module_read_data import (tb_read_data, tb_sort_wcenter, tb_shift_fermi,
     tb_correct_data)
 from match_module_spin_process import tb_correct_spinor
@@ -40,7 +40,8 @@ def write_hr_dat(tbslab, hr_type, postfix="hr_match"):
 
 ################
 # input parameters #
-material, path, input_params = setup_input()
+input_filename = str(sys.argv[1])
+material, path, input_params = setup_input(input_filename)
 ################################
 # read binary files and initialize them
 ################################

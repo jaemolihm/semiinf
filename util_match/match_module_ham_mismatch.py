@@ -47,27 +47,3 @@ def ham_maximal_hopping(tbbulk, tbslab):
     return max(intra_max_list), max(inter_max_list)
 
 
-def write_hr_dat(tbslab):
-    hr_filehame = tbslab['path'] + tbslab['seedname'] + '_hr_match.dat'
-    with open(hr_filehame, 'w') as f:
-        header = 'written by match_main.py at ' + strftime("%a, %d %b %Y %H:%M:%S +0000", localtime()) + '\n'
-
-        f.write(header) # Date and time
-        f.write(f"{tbslab['nw']:10d}\n")
-        f.write(f"{tbslab['nrpts_all']:10d}")
-        for ir in range(tbslab['nrpts_all']):
-            if ir % 15 == 0: f.write("\n")
-            f.write(f"{tbslab['ndegen_all'][ir]:5d}")
-        f.write("\n")
-        for ir in range(tbslab['nrpts_all']):
-            for iw in range(tbslab['nw']):
-                for jw in range(tbslab['nw']):
-                    f.write(f"{tbslab['rvec_all'][0,ir]:5d}"
-                            f"{tbslab['rvec_all'][1,ir]:5d}"
-                            f"{tbslab['rvec_all'][2,ir]:5d}"
-                            f"{jw+1:5d}{iw+1:5d}"
-                            f"{tbslab['hr_ham_all'][ir][jw,iw].real:12.6f}"
-                            f"{tbslab['hr_ham_all'][ir][jw,iw].imag:12.6f}")
-                    f.write("\n")
-
-

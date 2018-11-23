@@ -9,7 +9,7 @@ from match_module_read_data import (tb_read_data, tb_sort_wcenter, tb_shift_ferm
     tb_correct_data)
 from match_module_ham_process import run_opt_diagonly
 from match_module_ham_mismatch import (ham_mismatch_intra, ham_mismatch_inter,
-                                       ham_maximal_hopping, write_hr_dat)
+                                       ham_maximal_hopping)
 
 
 ################
@@ -45,7 +45,7 @@ ham_intra, ham_inter = ham_maximal_hopping(tbbulk, tbslab)
 print("begin output", flush=True)
 
 # save output hamiltonian as text file
-write_hr_dat(tbslab)
+write_hr_dat(tbslab, 'hr_ham_all', postfix='hr_ham')
 
 # write result summary
 with open(path+'out_match.txt', 'w') as f:
@@ -89,3 +89,32 @@ with open(path+'out_match_minimization.txt', 'w') as f:
         f.write(f"{i:5d} {obj_list[i]:.10f}\n")
 
 print("end output", flush=True)
+
+def write_hr_dat(tbslab, hr_type, postfix="hr_match"):
+    hr_filehame = tbslab['path'] + tbslab['seedname'] + '_'+filename_postfix+'.dat'
+
+    assert len(tbslab[hr_type]) == tbslab['nrpts_all']
+    assert tbslab[hr_type].shape == (tbslab['nw'], tbslab['nw'])
+
+    with open(hr_filehame, 'w') as f:
+        header = 'written by match_main.py at ' + strftime("%a, %d %b %Y %H:%M:%S +0000", localtime()) + '\n'
+
+        f.write(header) # Date and time
+        f.write(f"{tbslab['nw']:10d}\n")
+        f.write(f"{tbslab['nrpts_all']:10d}")
+        for ir in range(tbslab['nrpts_all']):
+            if ir % 15 == 0: f.write("\n")
+            f.write(f"{tbslab['ndegen_all'][ir]:5d}")
+        f.write("\n")
+        for ir in range(tbslab['nrpts_all']):
+            for iw in range(tbslab['nw']):
+                for jw in range(tbslab['nw']):
+                    f.write(f"{tbslab['rvec_all'][0,ir]:5d}"
+                            f"{tbslab['rvec_all'][1,ir]:5d}"
+                            f"{tbslab['rvec_all'][2,ir]:5d}"
+                            f"{jw+1:5d}{iw+1:5d}"
+                            f"{tbslab['hr_ham_all'][ir][jw,iw].real:12.6f}"
+                            f"{tbslab['hr_ham_all'][ir][jw,iw].imag:12.6f}")
+                    f.write("\n")
+
+

@@ -10,8 +10,11 @@ program main
 
     character(len=20) :: buffer_temp
     integer :: ik, irec, ik_start, ik_end, il
-    real(DP), allocatable :: dos_s0(:), dos_b(:), dos_layer(:,:), dos_spn_s(:,:)
+    real(DP), allocatable :: dos_s0(:), dos_b(:), dos_spn_s(:,:)
     real(DP), allocatable :: dos_up(:), dos_dn(:), dos_spn_s_up(:,:), dos_spn_s_dn(:,:)
+    complex(DP), allocatable :: dos_layer(:,:)
+    integer :: n_dos_layer ! this should later go to parameters.f90
+    n_dos_layer = 0
 
     CALL mpi_setup()
     
@@ -45,14 +48,20 @@ program main
     ! ELSE
         ALLOCATE(dos_s0(num_energy))
         ALLOCATE(dos_b(num_energy))
-        ! IF (n_dos_layer>0) ALLOCATE(dos_layer(num_energy,n_dos_layer))
+        IF (n_dos_layer>0) ALLOCATE(dos_layer(num_energy, 64))
         IF (isspin) ALLOCATE(dos_spn_s(num_energy,3))
         inquire (iolength = irec) dos_s0
         open (unit = 9, file = "dos_surf00.out", form="unformatted", access="direct", recl=irec)
+        inquire (iolength = irec) dos_b
         open (unit = 10, file = "dos_bulk.out", form="unformatted", access="direct", recl=irec)
         IF (isspin) open (unit = 3, file = "dos_surf_sx.out", form="unformatted", access="direct", recl=irec)
         IF (isspin) open (unit = 4, file = "dos_surf_sy.out", form="unformatted", access="direct", recl=irec)
         IF (isspin) open (unit = 5, file = "dos_surf_sz.out", form="unformatted", access="direct", recl=irec)
+        IF (n_dos_layer > 0) THEN
+            inquire (iolength = irec) dos_layer(:,:)
+            write(buffer_temp,'("dos_surf",I0.2,".out")'), 1
+            open (unit=11, file = buffer_temp, form="unformatted", access="direct", recl=irec)
+        END IF
         ! DO il = 1, n_dos_layer
             ! write(buffer_temp,'("dos_surf",I0.2,".out")'), il
             ! open (unit=unit_il(il), file = buffer_temp, form="unformatted", access="direct", recl=irec)
@@ -69,6 +78,7 @@ program main
     IF (isspin) CLOSE(3)
     IF (isspin) CLOSE(4)
     IF (isspin) CLOSE(5)
+    CLOSE(11)
     ! DO il = 1, n_dos_layer
         ! CLOSE(unit_il(il))
     ! END DO
@@ -145,7 +155,7 @@ SUBROUTINE run_kpoint()
             CALL set_transfer_mat()
             CALL get_dos_s(dos_s0(ie))
             CALL get_dos_b(dos_b(ie))
-            ! CALL get_dos_nlayer(n_dos_layer, dos_layer(ie,:))
+            IF (n_dos_layer > 0) CALL get_dos_nlayer(n_dos_layer, dos_layer(ie,:))
             IF (isspin) CALL get_spin_s(dos_spn_s(ie,:))
         ! END IF
         CALL pp_green_deallocate_green_layer()
@@ -158,14 +168,15 @@ SUBROUTINE run_kpoint()
         ! IF (isspin) WRITE(unit=4, rec=ik) dos_spn_s_up
         ! IF (isspin) WRITE(unit=5, rec=ik) dos_spn_s_dn
     ! ELSE
-        WRITE(unit=9, rec=ik) dos_s0
-        WRITE(unit=10, rec=ik) dos_b
+        WRITE(unit=9, rec=ik) dos_s0(:)
+        WRITE(unit=10, rec=ik) dos_b(:)
         IF (isspin) WRITE(unit=3, rec=ik) dos_spn_s(:,1)
         IF (isspin) WRITE(unit=4, rec=ik) dos_spn_s(:,2)
         IF (isspin) WRITE(unit=5, rec=ik) dos_spn_s(:,3)
-        ! DO il = 1, n_dos_layer
+        DO il = 1, n_dos_layer
             ! WRITE(unit=unit_il(il), rec=ik) dos_layer(:,il)
-        ! END DO
+            WRITE(unit=11, rec=ik) dos_layer(:,:)
+        END DO
     ! END IF
     WRITE(*,'("ik=",I6.5," done")') ik
 END SUBROUTINE

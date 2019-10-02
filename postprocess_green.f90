@@ -19,12 +19,13 @@ SUBROUTINE get_dos_s(dos_out)
     INTEGER :: i
     dos_out = 0.0_dp
     DO i = 1, nsurf
-        IF ( AIMAG(green_s(i,i)) < 0 ) THEN
-            WRITE(*,*) "negative DOS: green_s basis ", i, ", value: ", AIMAG(green_s(i,i))
+        IF ( AIMAG(green_s(i,i)) < 0) THEN
+            WRITE(*,*) "negative DOS: green_s"
             ! STOP
         END IF
         dos_out = dos_out + AIMAG(green_s(i,i)) / PI
     END DO
+    RETURN
 END SUBROUTINE
 
 ! SUBROUTINE get_dos_up(dos_out)
@@ -102,8 +103,8 @@ SUBROUTINE get_dos_b(dos_out)
     INTEGER :: i
     dos_out = 0.0_dp
     DO i = 1, nbulk
-        IF ( AIMAG(green_b(i,i)) < 0 ) THEN
-            WRITE(*,*) "negative DOS: green_b basis ", i, ", value: ", AIMAG(green_b(i,i))
+        IF ( AIMAG(green_b(i,i)) < 0) THEN
+            WRITE(*,*) "negative DOS: green_b"
             ! STOP
         END IF
         dos_out = dos_out + AIMAG(green_b(i,i)) / PI
@@ -112,22 +113,29 @@ END SUBROUTINE
 
 SUBROUTINE get_dos_nlayer(nlayer, dos_out)
     INTEGER, INTENT(IN) :: nlayer
-    REAL(dp), INTENT(OUT) :: dos_out(1:nlayer)
-    INTEGER :: i, il
+    complex(dp), INTENT(OUT) :: dos_out(64)
+    INTEGER :: i, il, j, cnt
     IF (nlayer .lt. 1) RETURN
     ! recurrence to calculate green_ilayer
     CALL set_green_layer(nlayer)
-    dos_out = 0.0_dp
-    DO il = 1, nlayer
-        ! calculate trace and DOS
-        DO i = 1, nbulk
-            IF ( AIMAG(green_layer(i,i,il)) < 0 ) THEN
-                WRITE(*,'("negative DOS: green_",I," basis ",I3,", value: ",ES8.1)')  il, i, AIMAG(green_layer(i,i,il))
-                ! STOP
-            END IF
-            dos_out(il) = dos_out(il) + AIMAG(green_layer(i,i,il)) / PI
-        END DO
-    END DO
+    dos_out = cmplx_0
+    ! DO il = 1, nlayer
+    !     ! calculate trace and DOS
+    !     DO i = 1, nbulk
+    !         IF ( AIMAG(green_layer(i,i,il)) < 0 ) THEN
+    !             WRITE(*,'("negative DOS: green_",I," basis ",I3,", value: ",ES8.1)')  il, i, AIMAG(green_layer(i,i,il))
+    !             ! STOP
+    !         END IF
+    !         dos_out(i, il) = AIMAG(green_layer(i,i,il)) / PI
+    !     END DO
+    ! END DO
+    cnt = 1
+    do i = 41, 48
+        do j = 41, 48
+            dos_out(cnt) = green_layer(i,j,1)
+            cnt = cnt + 1
+        end do
+    end do
 END SUBROUTINE
 
 SUBROUTINE get_spin_s(spin_out)

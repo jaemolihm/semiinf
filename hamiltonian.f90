@@ -40,7 +40,7 @@ SUBROUTINE hamiltonian_setup()
         CALL read_hamiltonian(0, hr0, rvec0, ndegen0, nrpts0)
     ELSE IF (isslab_match) THEN
         CALL read_hamiltonian(0, hr0, rvec0, ndegen0, nrpts0, trim(seedname)//".bulk")
-        CALL read_hamiltonian(1, hr1, rvec1, ndegen1, nrpts1, trim(seedname)//".bulk")
+        CALL read_hamiltonian(bulk_rz, hr1, rvec1, ndegen1, nrpts1, trim(seedname)//".bulk")
         CALL read_hamiltonian(0, hr0s, rvec0s, ndegen0s, nrpts0s, trim(seedname)//".slab")
         seedname = trim(seedname)//".slab"
 
@@ -130,7 +130,6 @@ subroutine read_hamiltonian(nr3,hr_nr3,rvec_nr3,ndegen_nr3,irpts_nr3,seedname_)
     complex(dp), allocatable :: hr_nr3_tmp(:,:,:)
     real(dp), allocatable :: ndegen(:), rvec_nr3_tmp(:,:), ndegen_nr3_tmp(:)
     character(80) :: buffer
-    logical :: ir3_checked
 
     ioerror=0
     irpts_nr3 = 0
@@ -160,18 +159,16 @@ subroutine read_hamiltonian(nr3,hr_nr3,rvec_nr3,ndegen_nr3,irpts_nr3,seedname_)
     end do
     read(10, *) ndegen(((nrpts-1)/15)*15+1:nrpts)
     do irpts = 1, nrpts
-        ir3_checked = .false.
         do iw=1,num_hr_wann**2
             read (10,'(5I5,2F12.6)',iostat=ioerror) ir1,ir2,ir3, ni,nj, hr_re, hr_im
             if (ioerror/=0) CALL io_error('Error reading file: '//filename)
             if (ir3 == nr3) then
-                if (.not. ir3_checked) then
+                if (iw == 1) then
                     irpts_nr3 = irpts_nr3 + 1
-                    ir3_checked = .true.
+                    rvec_nr3_tmp(:,irpts_nr3) = (/ ir1, ir2 /)
+                    ndegen_nr3_tmp(irpts_nr3) = ndegen(irpts)
                 end if
                 hr_nr3_tmp(ni,nj,irpts_nr3) = cmplx(hr_re, hr_im, dp)
-                rvec_nr3_tmp(:,irpts_nr3) = (/ ir1, ir2 /)
-                ndegen_nr3_tmp(irpts_nr3) = ndegen(irpts)
             end if
         enddo
     enddo
@@ -189,7 +186,7 @@ subroutine read_hamiltonian(nr3,hr_nr3,rvec_nr3,ndegen_nr3,irpts_nr3,seedname_)
     deallocate(ndegen_nr3_tmp)
     deallocate(ndegen)
 
-    IF (is_root) write(*,'("Hamiltonian_",I1," shape : ",3I5)') nr3, shape(hr_nr3)
+    IF (is_root) write(*,'("Hamiltonian_",I2," shape : ",3I5)') nr3, shape(hr_nr3)
     IF(is_root) write(*,*) 'end reading '//filename
 end subroutine
 

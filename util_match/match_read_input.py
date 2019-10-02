@@ -15,7 +15,6 @@ def find_argument(full_data, keyword, arg_type="text", arr_shape=None):
                 value = linedata[1:]
             else:
                 value = linedata[-1]
-
     if not found: return None
 
     if arg_type == "text":

@@ -2,7 +2,7 @@ module parameters
   !! This module contains parameters to control the actions of wannier90.
   !! Also routines to read the parameters and write them out again.
 
-  USE constants
+  USE comms
   integer, parameter :: in_unit = 7
   integer, parameter :: maxlen = 100
 

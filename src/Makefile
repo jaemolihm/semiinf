@@ -2,35 +2,35 @@
 
 include ../make.inc
 
-OBJECTS=constants.o  hamiltonian.o  iter_bulk.o  iter_slab.o  main.o  parameters.o  postprocess_green.o
+OBJECTS=comms.o  hamiltonian.o  iter_bulk.o  iter_slab.o  main.o  parameters.o  postprocess_green.o
 
 default: all
 
 all: semiinf
 
-semiinf: constants.o  hamiltonian.o  iter_bulk.o  iter_slab.o  main.o  parameters.o  postprocess_green.o
-	$(MPIF90) ${FFLAG} ${LIBS} -o semiinf.x $^
+semiinf: comms.o  hamiltonian.o  iter_bulk.o  iter_slab.o  main.o  parameters.o  postprocess_green.o
+	$(MPIF90) ${FCOPTS} ${LIBS} -o semiinf.x $^
 
-constants.o:
-	$(MPIF90) ${FFLAG} -c constants.f90
+comms.o:
+	$(MPIF90) ${FCOPTS} -c comms.f90
 
-parameters.o: constants.o
-	$(MPIF90) ${FFLAG} -c parameters.f90
+parameters.o: comms.o
+	$(MPIF90) ${FCOPTS} -c parameters.f90
 
-hamiltonian.o: constants.o parameters.o
-	$(MPIF90) ${FFLAG} -c hamiltonian.f90
+hamiltonian.o: comms.o parameters.o
+	$(MPIF90) ${FCOPTS} -c hamiltonian.f90
 
-postprocess_green.o: constants.o parameters.o hamiltonian.o
-	$(MPIF90) ${FFLAG} -c postprocess_green.f90
+postprocess_green.o: comms.o parameters.o hamiltonian.o
+	$(MPIF90) ${FCOPTS} -c postprocess_green.f90
 
-iter_bulk.o: constants.o parameters.o hamiltonian.o postprocess_green.o
-	$(MPIF90) ${FFLAG} -c iter_bulk.f90
+iter_bulk.o: comms.o parameters.o hamiltonian.o postprocess_green.o
+	$(MPIF90) ${FCOPTS} -c iter_bulk.f90
 
-iter_slab.o: constants.o parameters.o hamiltonian.o postprocess_green.o
-	$(MPIF90) ${FFLAG} -c iter_slab.f90
+iter_slab.o: comms.o parameters.o hamiltonian.o postprocess_green.o
+	$(MPIF90) ${FCOPTS} -c iter_slab.f90
 
-main.o: constants.o parameters.o hamiltonian.o postprocess_green.o iter_bulk.o iter_slab.o
-	$(MPIF90) ${FFLAG} -c main.f90
+main.o: comms.o parameters.o hamiltonian.o postprocess_green.o iter_bulk.o iter_slab.o
+	$(MPIF90) ${FCOPTS} -c main.f90
 	- ( cd ../; ln -fs src/semiinf.x . ; )
 
 clean:

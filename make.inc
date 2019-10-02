@@ -4,8 +4,8 @@
 #=====================================================
 F90    = ifort
 MPIF90 = mpifort
-FCOPTS = -O2 -g -traceback -assume buffered_io
-LDOPTS = -O2 -g -traceback -assume buffered_io
+FCOPTS = -O2 -g -traceback -assume buffered_io -fpp
+LDOPTS = -O2 -g -traceback -assume buffered_io -fpp
 
 #========================================================
 # Intel mkl libraries. Set LIBPATH if not in default path

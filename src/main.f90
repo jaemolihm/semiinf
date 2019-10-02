@@ -1,6 +1,5 @@
 program main
-    USE mpi
-    USE constants
+    USE comms
     USE parameters
     USE hamiltonian, ONLY : omega, kx, ky
     USE iter_bulk
@@ -89,10 +88,10 @@ CONTAINS
 SUBROUTINE distribute_kpoint()
     ! variables related to mpi
     integer, parameter :: send_data_tag = 2001, receive_data_tag = 2002
-    integer :: ierr, an_id, nk_per_proc_quo, nk_per_proc_rem, &
-           my_status(MPI_STATUS_SIZE)
+    integer :: ierr, an_id, nk_per_proc_quo, nk_per_proc_rem
+           ! my_status(MPI_STATUS_SIZE)
     
-    IF (is_root) THEN
+    ! IF (is_root) THEN
         nk_per_proc_quo = num_kpoint / num_procs
         nk_per_proc_rem = num_kpoint - (num_procs*nk_per_proc_quo)
         ! nk = q * (np-r) + (q+1) * r
@@ -106,17 +105,22 @@ SUBROUTINE distribute_kpoint()
             ELSE
                 ik_end = ik_start + nk_per_proc_quo
             ENDIF
-            CALL MPI_SEND(ik_start, 1, MPI_INT, an_id, send_data_tag, MPI_COMM_WORLD, ierr)
-            CALL MPI_SEND(ik_end, 1, MPI_INT, an_id, send_data_tag, MPI_COMM_WORLD, ierr)
+            ! CALL MPI_SEND(ik_start, 1, MPI_INT, an_id, send_data_tag, MPI_COMM_WORLD, ierr)
+            ! CALL MPI_SEND(ik_end, 1, MPI_INT, an_id, send_data_tag, MPI_COMM_WORLD, ierr)
+            IF (my_id == an_id) THEN
+                EXIT
+            ENDIF
         END DO
-        ik_start = 1
-        ik_end = nk_per_proc_quo
-    ELSE
-        CALL MPI_RECV(ik_start, 1, MPI_INT, root_process, MPI_ANY_TAG, &
-                      MPI_COMM_WORLD, my_status, ierr)
-        CALL MPI_RECV(ik_end, 1, MPI_INT, root_process, MPI_ANY_TAG, &
-                      MPI_COMM_WORLD, my_status, ierr)
-    ENDIF
+        IF (is_root) THEN
+            ik_start = 1
+            ik_end = nk_per_proc_quo
+        ENDIF
+    ! ELSE
+        ! CALL MPI_RECV(ik_start, 1, MPI_INT, root_process, MPI_ANY_TAG, &
+        !               MPI_COMM_WORLD, my_status, ierr)
+        ! CALL MPI_RECV(ik_end, 1, MPI_INT, root_process, MPI_ANY_TAG, &
+        !               MPI_COMM_WORLD, my_status, ierr)
+    ! ENDIF
     print*, "number of k point in node ", my_id, " is ", ik_end-ik_start+1
 END SUBROUTINE
 
@@ -130,7 +134,7 @@ SUBROUTINE run_kpoint()
     CALL hamiltonian_set_hij()
     ! ... loop over energy points
     DO ie = 1, num_energy
-        omega = energy(ie) * CMPLX_1 - sigma * CMPLX_IM
+        omega = energy(ie) * cone - sigma * ci
         ! run iteration
         IF (isslab) THEN
             CALL iter_slab_main()

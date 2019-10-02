@@ -1,5 +1,5 @@
 module iter_bulk
-    use constants
+    use comms
     use parameters
     use hamiltonian, ONLY : h11, h12, omega
     use postprocess_green, ONLY : green_s, green_b
@@ -62,20 +62,20 @@ contains
         CALL ZCOPY(nbulk*nbulk, b_b, 1, b_b_prev, 1)
 
         ! temp_mat = a_b_prev * inv_e_b
-        CALL ZGEMM('N','N',nbulk,nbulk,nbulk,CMPLX_1,a_b_prev,nbulk,inv_e_b,nbulk,CMPLX_0,temp_mat,nbulk)
+        CALL ZGEMM('N','N',nbulk,nbulk,nbulk,cone,a_b_prev,nbulk,inv_e_b,nbulk,czero,temp_mat,nbulk)
         ! e_s = e_s(prev) + temp_mat * b_b_prev
-        CALL ZGEMM('N','N',nbulk,nbulk,nbulk,CMPLX_1,temp_mat,nbulk,b_b_prev,nbulk,CMPLX_1,e_s,nbulk)
+        CALL ZGEMM('N','N',nbulk,nbulk,nbulk,cone,temp_mat,nbulk,b_b_prev,nbulk,cone,e_s,nbulk)
         ! e_b = e_b(prev) + temp_mat * b_b_prev
-        CALL ZGEMM('N','N',nbulk,nbulk,nbulk,CMPLX_1,temp_mat,nbulk,b_b_prev,nbulk,CMPLX_1,e_b,nbulk)
+        CALL ZGEMM('N','N',nbulk,nbulk,nbulk,cone,temp_mat,nbulk,b_b_prev,nbulk,cone,e_b,nbulk)
         ! a_b = temp_mat * a_b_prev
-        CALL ZGEMM('N','N',nbulk,nbulk,nbulk,CMPLX_1,temp_mat,nbulk,a_b_prev,nbulk,CMPLX_0,a_b,nbulk)   
+        CALL ZGEMM('N','N',nbulk,nbulk,nbulk,cone,temp_mat,nbulk,a_b_prev,nbulk,czero,a_b,nbulk)   
 
         ! temp_mat = b_b_prev * inv_e_b
-        CALL ZGEMM('N','N',nbulk,nbulk,nbulk,CMPLX_1,b_b_prev,nbulk,inv_e_b,nbulk,CMPLX_0,temp_mat,nbulk)
+        CALL ZGEMM('N','N',nbulk,nbulk,nbulk,cone,b_b_prev,nbulk,inv_e_b,nbulk,czero,temp_mat,nbulk)
         ! e_b = e_b(prev) + temp_mat * a_b_prev
-        CALL ZGEMM('N','N',nbulk,nbulk,nbulk,CMPLX_1,temp_mat,nbulk,a_b_prev,nbulk,CMPLX_1,e_b,nbulk)
+        CALL ZGEMM('N','N',nbulk,nbulk,nbulk,cone,temp_mat,nbulk,a_b_prev,nbulk,cone,e_b,nbulk)
         ! b_b = temp_mat * b_b_prev
-        CALL ZGEMM('N','N',nbulk,nbulk,nbulk,CMPLX_1,temp_mat,nbulk,b_b_prev,nbulk,CMPLX_0,b_b,nbulk)
+        CALL ZGEMM('N','N',nbulk,nbulk,nbulk,cone,temp_mat,nbulk,b_b_prev,nbulk,czero,b_b,nbulk)
     END SUBROUTINE
 
     SUBROUTINE iter_bulk_green()

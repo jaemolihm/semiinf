@@ -1,5 +1,5 @@
 module hamiltonian
-    use constants
+    use comms
     use parameters
     IMPLICIT NONE
     COMPLEX(dp), allocatable, dimension(:,:), public, save :: h00, h01, h11, h12

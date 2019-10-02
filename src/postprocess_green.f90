@@ -1,5 +1,5 @@
 MODULE postprocess_green
-    USE constants
+    USE comms
     USE parameters
     USE hamiltonian
     IMPLICIT NONE
@@ -118,7 +118,7 @@ SUBROUTINE get_dos_nlayer(nlayer, dos_out)
     IF (nlayer .lt. 1) RETURN
     ! recurrence to calculate green_ilayer
     CALL set_green_layer(nlayer)
-    dos_out = cmplx_0
+    dos_out = czero
     ! DO il = 1, nlayer
     !     ! calculate trace and DOS
     !     DO i = 1, nbulk
@@ -191,10 +191,10 @@ SUBROUTINE set_green_layer(nl)
             ALLOCATE(temp_mat2(nbulk,nsurf))
             ALLOCATE(temp_mat3(nbulk,nbulk))
             CALL ZCOPY(nbulk*nbulk, teff_mat, 1, green_layer(:,:,1), 1)
-            CALL ZGEMM('N','C',nbulk,nsurf,nbulk,CMPLX_1, teff_mat, nbulk, h01, nsurf,CMPLX_0, temp_mat1, nbulk)
-            CALL ZGEMM('N','N',nbulk,nsurf,nsurf,CMPLX_1, temp_mat1, nbulk, green_s, nsurf,CMPLX_0, temp_mat2, nbulk)
-            CALL ZGEMM('N','N',nbulk,nbulk,nsurf,CMPLX_1, temp_mat2, nbulk, h01, nsurf,CMPLX_0, temp_mat3, nbulk)
-            CALL ZGEMM('N','N',nbulk,nbulk,nbulk,CMPLX_1, temp_mat3, nbulk, seff_mat, nbulk,CMPLX_1, green_layer(:,:,1), nbulk)
+            CALL ZGEMM('N','C',nbulk,nsurf,nbulk,cone, teff_mat, nbulk, h01, nsurf,czero, temp_mat1, nbulk)
+            CALL ZGEMM('N','N',nbulk,nsurf,nsurf,cone, temp_mat1, nbulk, green_s, nsurf,czero, temp_mat2, nbulk)
+            CALL ZGEMM('N','N',nbulk,nbulk,nsurf,cone, temp_mat2, nbulk, h01, nsurf,czero, temp_mat3, nbulk)
+            CALL ZGEMM('N','N',nbulk,nbulk,nbulk,cone, temp_mat3, nbulk, seff_mat, nbulk,cone, green_layer(:,:,1), nbulk)
             DEALLOCATE(temp_mat1)
             DEALLOCATE(temp_mat2)
             DEALLOCATE(temp_mat3)
@@ -203,25 +203,25 @@ SUBROUTINE set_green_layer(nl)
             ! green_layer(:,:,1) = green_s + temp_mat1 * s_mat
             ALLOCATE(temp_mat1(nbulk,nbulk))
             CALL ZCOPY(nbulk*nbulk, green_s, 1, green_layer(:,:,1), 1)
-            CALL ZGEMM('N','N',nbulk,nbulk,nbulk,CMPLX_1, t_mat, nbulk, green_s, nbulk,CMPLX_0, temp_mat1, nbulk)
-            CALL ZGEMM('N','N',nbulk,nbulk,nbulk,CMPLX_1, temp_mat1, nbulk, s_mat, nbulk,CMPLX_1, green_layer(:,:,1), nbulk)
+            CALL ZGEMM('N','N',nbulk,nbulk,nbulk,cone, t_mat, nbulk, green_s, nbulk,czero, temp_mat1, nbulk)
+            CALL ZGEMM('N','N',nbulk,nbulk,nbulk,cone, temp_mat1, nbulk, s_mat, nbulk,cone, green_layer(:,:,1), nbulk)
             DEALLOCATE(temp_mat1)
         ELSE IF ((il>1) .AND. isslab) THEN
             ! green_layer(:,:,il) = teff_mat + ( (teff_mat * h12^dagger) * green_layer(:,:,il-1)) * s_mat
             ALLOCATE(temp_mat1(nbulk,nbulk))
             ALLOCATE(temp_mat2(nbulk,nbulk))
             CALL ZCOPY(nbulk*nbulk, teff_mat, 1, green_layer(:,:,il), 1)
-            CALL ZGEMM('N','C',nbulk,nbulk,nbulk,CMPLX_1, teff_mat, nbulk, h12, nbulk,CMPLX_0, temp_mat1, nbulk)
-            CALL ZGEMM('N','N',nbulk,nbulk,nbulk,CMPLX_1, temp_mat1, nbulk, green_layer(:,:,il-1), nbulk,CMPLX_0, temp_mat2, nbulk)
-            CALL ZGEMM('N','N',nbulk,nbulk,nbulk,CMPLX_1, temp_mat2, nbulk, s_mat, nbulk,CMPLX_1, green_layer(:,:,il), nbulk)
+            CALL ZGEMM('N','C',nbulk,nbulk,nbulk,cone, teff_mat, nbulk, h12, nbulk,czero, temp_mat1, nbulk)
+            CALL ZGEMM('N','N',nbulk,nbulk,nbulk,cone, temp_mat1, nbulk, green_layer(:,:,il-1), nbulk,czero, temp_mat2, nbulk)
+            CALL ZGEMM('N','N',nbulk,nbulk,nbulk,cone, temp_mat2, nbulk, s_mat, nbulk,cone, green_layer(:,:,il), nbulk)
             DEALLOCATE(temp_mat1)
             DEALLOCATE(temp_mat2)
         ELSE ! il > 1 and .NOT. isslab
             ! green_layer(:,:,il) = green_s + ( (t_mat * green_layer(:,:,il-1)) * s_mat )
             ALLOCATE(temp_mat1(nbulk,nbulk))
             CALL ZCOPY(nbulk*nbulk, green_s, 1, green_layer(:,:,il), 1)
-            CALL ZGEMM('N','N',nbulk,nbulk,nbulk,CMPLX_1, t_mat, nbulk, green_layer(:,:,il-1), nbulk,CMPLX_0, temp_mat1, nbulk)
-            CALL ZGEMM('N','N',nbulk,nbulk,nbulk,CMPLX_1, temp_mat1, nbulk, s_mat, nbulk,CMPLX_1, green_layer(:,:,il), nbulk)
+            CALL ZGEMM('N','N',nbulk,nbulk,nbulk,cone, t_mat, nbulk, green_layer(:,:,il-1), nbulk,czero, temp_mat1, nbulk)
+            CALL ZGEMM('N','N',nbulk,nbulk,nbulk,cone, temp_mat1, nbulk, s_mat, nbulk,cone, green_layer(:,:,il), nbulk)
             DEALLOCATE(temp_mat1)
         END IF
     END DO
@@ -236,27 +236,27 @@ SUBROUTINE set_transfer_mat()
     COMPLEX(dp), ALLOCATABLE :: temp_mat(:,:)
     IF (isslab) THEN
         ! t_mat = green_s1 * h12^dagger
-        CALL ZGEMM('N','C',nbulk,nbulk,nbulk,CMPLX_1,green_s1,nbulk,h12,nbulk,CMPLX_0,t_mat,nbulk)
+        CALL ZGEMM('N','C',nbulk,nbulk,nbulk,cone,green_s1,nbulk,h12,nbulk,czero,t_mat,nbulk)
         ! s_mat = h12 * green_s1
-        CALL ZGEMM('N','N',nbulk,nbulk,nbulk,CMPLX_1,h12,nbulk,green_s1,nbulk,CMPLX_0,s_mat,nbulk)
+        CALL ZGEMM('N','N',nbulk,nbulk,nbulk,cone,h12,nbulk,green_s1,nbulk,czero,s_mat,nbulk)
         
         ALLOCATE(temp_mat(nbulk,nbulk))
         ! temp_mat = h11 + h12*t_mat
         ! teff_mat = (omega - temp_mat)^-1
         CALL ZCOPY(nbulk*nbulk, h11, 1, temp_mat, 1)
-        CALL ZGEMM('N','N',nbulk,nbulk,nbulk,CMPLX_1, h12, nbulk, t_mat, nbulk,CMPLX_1, temp_mat, nbulk)
+        CALL ZGEMM('N','N',nbulk,nbulk,nbulk,cone, h12, nbulk, t_mat, nbulk,cone, temp_mat, nbulk)
         CALL inv_omega_minus_mat(nbulk, temp_mat, omega, teff_mat, 'set_transfer_mat for teff_mat')
         ! temp_mat = h11 + s_mat*h12^dagger
         ! seff_mat = (omega - temp_mat)^-1
         CALL ZCOPY(nbulk*nbulk, h11, 1, temp_mat, 1)
-        CALL ZGEMM('N','C',nbulk,nbulk,nbulk,CMPLX_1, s_mat, nbulk, h12, nbulk,CMPLX_1, temp_mat, nbulk)
+        CALL ZGEMM('N','C',nbulk,nbulk,nbulk,cone, s_mat, nbulk, h12, nbulk,cone, temp_mat, nbulk)
         CALL inv_omega_minus_mat(nbulk, temp_mat, omega, seff_mat, 'set_transfer_mat for teff_mat')
         DEALLOCATE(temp_mat)
     ELSE ! .NOT. isslab
         ! t_mat = green_s * h12^dagger
-        CALL ZGEMM('N','C',nbulk,nbulk,nbulk,CMPLX_1,green_s,nbulk,h12,nbulk,CMPLX_0,t_mat,nbulk)
+        CALL ZGEMM('N','C',nbulk,nbulk,nbulk,cone,green_s,nbulk,h12,nbulk,czero,t_mat,nbulk)
         ! s_mat = h12 * green_s
-        CALL ZGEMM('N','N',nbulk,nbulk,nbulk,CMPLX_1,h12,nbulk,green_s,nbulk,CMPLX_0,s_mat,nbulk)
+        CALL ZGEMM('N','N',nbulk,nbulk,nbulk,cone,h12,nbulk,green_s,nbulk,czero,s_mat,nbulk)
     ENDIF
 END SUBROUTINE
 

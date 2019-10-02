@@ -1,5 +1,5 @@
 module iter_slab
-    use constants
+    use comms
     use parameters
     use hamiltonian, ONLY : h00, h01, h11, h12, omega
     use postprocess_green, ONLY : green_s, green_s1, green_b
@@ -81,32 +81,32 @@ contains
         CALL ZCOPY(nbulk*nbulk, b_b, 1, b_b_prev, 1)
 
         ! temp_mat = inv_e_b * a_b
-        CALL ZGEMM('N','N',nbulk,nbulk,nbulk,CMPLX_1,inv_e_b,nbulk,a_b,nbulk,CMPLX_0,temp_mat,nbulk)
+        CALL ZGEMM('N','N',nbulk,nbulk,nbulk,cone,inv_e_b,nbulk,a_b,nbulk,czero,temp_mat,nbulk)
         ! a_s = a_s_prev * temp_mat
-        CALL ZGEMM('N','N',nsurf,nbulk,nbulk,CMPLX_1,a_s_prev,nsurf,temp_mat,nbulk,CMPLX_0,a_s,nsurf)
+        CALL ZGEMM('N','N',nsurf,nbulk,nbulk,cone,a_s_prev,nsurf,temp_mat,nbulk,czero,a_s,nsurf)
         ! a_b = a_b_prev * temp_mat
-        CALL ZGEMM('N','N',nbulk,nbulk,nbulk,CMPLX_1,a_b_prev,nbulk,temp_mat,nbulk,CMPLX_0,a_b,nbulk)
+        CALL ZGEMM('N','N',nbulk,nbulk,nbulk,cone,a_b_prev,nbulk,temp_mat,nbulk,czero,a_b,nbulk)
         ! e_b = e_b(prev) + b_b_prev * temp_mat
-        CALL ZGEMM('N','N',nbulk,nbulk,nbulk,CMPLX_1,b_b_prev,nbulk,temp_mat,nbulk,CMPLX_1,e_b,nbulk)
+        CALL ZGEMM('N','N',nbulk,nbulk,nbulk,cone,b_b_prev,nbulk,temp_mat,nbulk,cone,e_b,nbulk)
 
         ! temp_mat = b_b_prev * inv_e_b
-        CALL ZGEMM('N','N',nbulk,nbulk,nbulk,CMPLX_1,b_b_prev,nbulk,inv_e_b,nbulk,CMPLX_0,temp_mat,nbulk)
+        CALL ZGEMM('N','N',nbulk,nbulk,nbulk,cone,b_b_prev,nbulk,inv_e_b,nbulk,czero,temp_mat,nbulk)
         ! b_s = temp_mat * b_s_prev
-        CALL ZGEMM('N','N',nbulk,nsurf,nbulk,CMPLX_1,temp_mat,nbulk,b_s_prev,nbulk,CMPLX_0,b_s,nbulk)
+        CALL ZGEMM('N','N',nbulk,nsurf,nbulk,cone,temp_mat,nbulk,b_s_prev,nbulk,czero,b_s,nbulk)
         ! b_b = temp_mat * b_b_prev
-        CALL ZGEMM('N','N',nbulk,nbulk,nbulk,CMPLX_1,temp_mat,nbulk,b_b_prev,nbulk,CMPLX_0,b_b,nbulk)
+        CALL ZGEMM('N','N',nbulk,nbulk,nbulk,cone,temp_mat,nbulk,b_b_prev,nbulk,czero,b_b,nbulk)
 
         ! temp_mat = inv_e_b * b_b_prev
-        CALL ZGEMM('N','N',nbulk,nbulk,nbulk,CMPLX_1,inv_e_b,nbulk,b_b_prev,nbulk,CMPLX_0,temp_mat,nbulk)
+        CALL ZGEMM('N','N',nbulk,nbulk,nbulk,cone,inv_e_b,nbulk,b_b_prev,nbulk,czero,temp_mat,nbulk)
         ! e_b = e_b(prev) + a_b_prev * temp_mat
-        CALL ZGEMM('N','N',nbulk,nbulk,nbulk,CMPLX_1,a_b_prev,nbulk,temp_mat,nbulk,CMPLX_1,e_b,nbulk)
+        CALL ZGEMM('N','N',nbulk,nbulk,nbulk,cone,a_b_prev,nbulk,temp_mat,nbulk,cone,e_b,nbulk)
         ! e_s1 = e_s1(prev) + a_b_prev * temp_mat
-        CALL ZGEMM('N','N',nbulk,nbulk,nbulk,CMPLX_1,a_b_prev,nbulk,temp_mat,nbulk,CMPLX_1,e_s1,nbulk)
+        CALL ZGEMM('N','N',nbulk,nbulk,nbulk,cone,a_b_prev,nbulk,temp_mat,nbulk,cone,e_s1,nbulk)
 
         ! temp_mat_sb = a_s_prev * inv_e_b
-        CALL ZGEMM('N','N',nsurf,nbulk,nbulk,CMPLX_1,a_s_prev,nsurf,inv_e_b,nbulk,CMPLX_0,temp_mat_sb,nsurf)
+        CALL ZGEMM('N','N',nsurf,nbulk,nbulk,cone,a_s_prev,nsurf,inv_e_b,nbulk,czero,temp_mat_sb,nsurf)
         ! e_s0 = e_s0(prev) + temp_mat_sb * b_s_prev
-        CALL ZGEMM('N','N',nsurf,nsurf,nbulk,CMPLX_1,temp_mat_sb,nsurf,b_s_prev,nbulk,CMPLX_1,e_s0,nsurf)
+        CALL ZGEMM('N','N',nsurf,nsurf,nbulk,cone,temp_mat_sb,nsurf,b_s_prev,nbulk,cone,e_s0,nsurf)
     END SUBROUTINE
 
     SUBROUTINE iter_slab_green()

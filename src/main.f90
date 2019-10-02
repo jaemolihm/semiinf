@@ -109,7 +109,7 @@ SUBROUTINE run_kpoint()
     kx = plot_kpoint(1,ik)
     ky = plot_kpoint(2,ik)
     write(*,'("ik = ", I4, " kx = ", F6.3, " ky = ", F6.3)') ik, kx, ky
-    CALL hamiltonian_set_hij()
+    CALL hamiltonian_tb_to_k()
     ! ... loop over energy points
     DO ie = 1, num_energy
         omega = energy(ie) * cone - sigma * ci

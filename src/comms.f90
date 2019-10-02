@@ -1,3 +1,4 @@
+!------------------------------------------------------------------------
 MODULE parallel_include
 !------------------------------------------------------------------------
 !! Taken from QE/UtilXlib/parallel_include.f90
@@ -17,7 +18,11 @@ MODULE parallel_include
 #endif
 END MODULE parallel_include
 
+!------------------------------------------------------------------------
 MODULE comms
+!------------------------------------------------------------------------
+!! Common variables and subroutines used in semiinf.x
+!------------------------------------------------------------------------
   USE parallel_include
   IMPLICIT NONE
   SAVE

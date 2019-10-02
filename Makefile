@@ -1,7 +1,7 @@
 MPIF90=mpifort
 #FFLAG=-g -check all -fpe0 -warn -traceback -debug extended
 FFLAG=-g 
-FFLAG=-O2 -g -traceback
+FFLAG=-O2 -g -traceback -assume buffered_io
 
 LIBDIR=/appl/compiler/intel2013_sp1/composer_xe_2013_sp1.2.144/mkl
 LIBS=-L$(LIBDIR) -lmkl_core -lmkl_intel_lp64 -lmkl_sequential -lpthread
@@ -35,4 +35,4 @@ main.o: constants.o parameters.o hamiltonian.o postprocess_green.o iter_bulk.o i
 	$(MPIF90) ${FFLAG} -c main.f90
 
 clean:
-	rm semiinf.x *.o
+	rm semiinf.x *.o *.mod

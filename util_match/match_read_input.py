@@ -5,14 +5,18 @@ def find_argument(full_data, keyword, arg_type="text", arr_shape=None):
     and return value as output with type arg_type'''
     assert arg_type in ["text", "int", "float", "logical", "int_arr", "float_arr"]
 
+    found = False
     for line in full_data:
         if line[0] == '#': continue
         if line.startswith(keyword):
+            found = True
             linedata = line.replace(',',' ').replace('=',' ').replace(':',' ').split()
             if "arr" in arg_type:
                 value = linedata[1:]
             else:
                 value = linedata[-1]
+
+    if not found: return None
 
     if arg_type == "text":
         return value
@@ -59,6 +63,11 @@ def setup_input(input_filename):
         input_params['nbnd_b'] = find_argument(data, 'nbnd_b', 'int')
         input_params['nw_b'] = find_argument(data, 'nw_b', 'int')
         input_params['nklist_b'] = find_argument(data, 'nklist_b', 'int_arr')
+
+        tmp_val = find_argument(data, 'nw_exclude_s', 'int')
+        if tmp_val is not None: input_params['nw_exclude_s'] = tmp_val
+        tmp_val = find_argument(data, 'nw_exclude_b', 'int')
+        if tmp_val is not None: input_params['nw_exclude_b'] = tmp_val
 
         input_params['iw_head'] = find_argument(data, 'iw_head', 'int')
         input_params['iw_tail'] = find_argument(data, 'iw_tail', 'int')

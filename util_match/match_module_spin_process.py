@@ -280,7 +280,7 @@ def set_manual_bulk_slab_pair(tbbulk, tbslab, iw_head, iw_tail):
     tbslab['iws_to_iwb'] = {}
     for i in range(tbslab['nw']):
         tbslab['iws_to_iwb'][i] = (i - tbslab['iw_head']) % tbbulk['nw']
-    if 'GeTe.5layer_1vac.conv9' in path:
+    if (tbbulk['material'] == 'GeTe') & ('5layer_1vac.conv9' in path):
         tbslab['iws_to_iwb'][112] = 10
         tbslab['iws_to_iwb'][113] = 11
         tbslab['iws_to_iwb'][114] = 8
@@ -307,6 +307,24 @@ def set_manual_bulk_slab_pair(tbbulk, tbslab, iw_head, iw_tail):
 
         tbslab['iws_to_iwb'][217] = 21
         tbslab['iws_to_iwb'][221] = 17
+
+    elif (tbbulk['material'] == 'Bi2Se3') & ('8layer_1vac.conv9' in path):
+        tbslab['iws_to_iwb'][150] = 62
+        tbslab['iws_to_iwb'][151] = 63
+        tbslab['iws_to_iwb'][152] = 60
+        tbslab['iws_to_iwb'][153] = 61
+
+        tbslab['iws_to_iwb'][174] = 86
+        tbslab['iws_to_iwb'][176] = 84
+
+        tbslab['iws_to_iwb'][181] = 3
+        tbslab['iws_to_iwb'][183] = 1
+        
+        tbslab['iws_to_iwb'][84] = 86
+        tbslab['iws_to_iwb'][85] = 87
+        tbslab['iws_to_iwb'][86] = 84
+        tbslab['iws_to_iwb'][87] = 85
+
     # elif path == '../main_data/GeTe/5layer_1vac.slab/conv_9_wrongspinx/':
     #     # tbslab['iws_to_iwb'][24] = 20
     #     # tbslab['iws_to_iwb'][28] = 16

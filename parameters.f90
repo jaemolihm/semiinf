@@ -16,6 +16,7 @@ module parameters
   integer, public, save :: nbulk ! number of wannier basis for bulk principal layer
   integer, public, save :: nsurf ! number of wannier basis for surface principal layer
   integer, allocatable, public, save :: ind_0(:), ind_1(:), ind_2(:) ! indices for hij
+  integer, public, save :: bulk_rz ! 1 or -1: append bulk layer along +z or -z direction
 
   ! add onsite energy
   real(DP), allocatable, public, save :: bulk_onsite_energy(:)
@@ -66,6 +67,7 @@ CONTAINS
     WRITE(*,'("isbulk_add_onsite= ", L)') isbulk_add_onsite
     WRITE(*,'("nsurf= ", I)') nsurf
     WRITE(*,'("nbulk= ", I)') nbulk
+    WRITE(*,'("bulk_rz= ", I)') bulk_rz
     WRITE(*,'("num_energy= ",I)') num_energy
     WRITE(*,'("num_kpoint= ",I)') num_kpoint
   END SUBROUTINE
@@ -119,11 +121,13 @@ CONTAINS
     call param_get_keyword('isbulk_add_onsite',found,l_value=isbulk_add_onsite)
     call param_get_keyword('nsurf',found,i_value=nsurf)
     call param_get_keyword('nbulk',found,i_value=nbulk)
+    bulk_rz = 1
+    call param_get_keyword('bulk_rz',found,i_value=bulk_rz)
     if (isslab .AND. .NOT.(isslab_hamil .or. isbulk_add_onsite .or. isslab_match)) &
       call io_error('if isslab, isslab_hamil or isslab_match or isbulk_add_onsite must be .true.')
     if (isbulk_add_onsite .AND. .NOT.(isslab)) &
       call io_error('if isbulk_add_onsite, isslab must be .true.')
-    if (isslab .AND. (nsurf<=nbulk) .AND. .NOT.(isbulk_add_onsite)) &
+    if (isslab .AND. (.NOT. isslab_match) .AND. (nsurf<=nbulk) .AND. .NOT.(isbulk_add_onsite)) &
       call io_error('if isslab, nsurf must be GREATER THAN nbulk')
     ! if ((.NOT.isslab_hamil) .AND. (nsurf/=nbulk)) &
     !   call io_error('if NOT isslab_hamil, nsurf must be equal to nbulk')

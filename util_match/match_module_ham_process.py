@@ -58,7 +58,7 @@ def run_opt_diagonly(tbbulk, tbslab, do_unit_orbital=True, max_iter=None,
     nk_b = tbbulk['nk']
     nw_b = tbbulk['nw']
     verbose = True
-    if max_iter == None: # set to default value
+    if max_iter is None: # set to default value
         max_iter = 1000
         verbose = True
 

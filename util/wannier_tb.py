@@ -1,6 +1,7 @@
 """
 This module reads the tight-binding Hamiltonian calculated by wannier90.x,
 and calculates the band structure.
+Note that hr[ir,i,j] = <w_i,R=0|H|w_j,R=ir>
 """
 import os
 import sys
@@ -177,7 +178,7 @@ class TBdict:
                 for iw in range(self.nw):
                     for jw in range(self.nw):
                         f.write(f'{self.rvec[0,ir]:5d}{self.rvec[1,ir]:5d}'
-                                f'{self.rvec[2,ir]:5d}{jw:5d}{iw:5d}'
+                                f'{self.rvec[2,ir]:5d}{jw+1:5d}{iw+1:5d}'
                                 f'{self.hr[ir,jw,iw].real:12.6f}{self.hr[ir,jw,iw].imag:12.6f}\n')
 
 # Example usage

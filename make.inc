@@ -1,11 +1,19 @@
+#=====================================================
+# Preprocessing flags
+#=====================================================
+# Parallel execution:
+#       __MPI         MPI parallelization
+#       __MPI_MODULE      Compile with "USE mpi" instead of "include 'mpif/h'"
+DFLAGS = -fpp -D__MPI
+
 
 #=====================================================
 # For Linux with intel version 11/12 on 64bit machines
 #=====================================================
 F90    = ifort
 MPIF90 = mpifort
-FCOPTS = -O2 -g -traceback -assume buffered_io -fpp
-LDOPTS = -O2 -g -traceback -assume buffered_io -fpp
+FCOPTS = $(DFLAGS) -O2 -g -traceback -assume buffered_io
+LDOPTS = $(DFLAGS) -O2 -g -traceback -assume buffered_io
 
 #========================================================
 # Intel mkl libraries. Set LIBPATH if not in default path

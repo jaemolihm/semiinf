@@ -50,7 +50,9 @@ SUBROUTINE get_dos_b(dos_out)
   END DO
 END SUBROUTINE get_dos_b
 !------------------------------------------------------------------------
-
+!
+!------------------------------------------------------------------------
+! FIXME: to be uncommented
 ! SUBROUTINE get_dos_up(dos_out)
 !     IMPLICIT NONE
 !     REAL(DP), INTENT(OUT) :: dos_out
@@ -64,7 +66,11 @@ END SUBROUTINE get_dos_b
 !         END IF
 !         dos_out = dos_out + AIMAG(green_s(i,i)) / PI
 !     END DO
-! END SUBROUTINE
+! END SUBROUTINE get_dos_up
+!------------------------------------------------------------------------
+!
+!------------------------------------------------------------------------
+! FIXME: to be uncommented
 ! SUBROUTINE get_dos_dn(dos_out)
 !     IMPLICIT NONE
 !     REAL(DP), INTENT(OUT) :: dos_out
@@ -78,7 +84,11 @@ END SUBROUTINE get_dos_b
 !         END IF
 !         dos_out = dos_out + AIMAG(green_s(i,i)) / PI
 !     END DO
-! END SUBROUTINE
+! END SUBROUTINE get_dos_dn
+!------------------------------------------------------------------------
+!
+!------------------------------------------------------------------------
+! FIXME: to be uncommented
 ! SUBROUTINE get_spin_up(spin_out)
 !     IMPLICIT NONE
 !     REAL(DP), INTENT(OUT) :: spin_out(3)
@@ -98,7 +108,11 @@ END SUBROUTINE get_dos_b
 !         END DO
 !     END DO
 !     DEALLOCATE(spnk)
-! END SUBROUTINE
+! END SUBROUTINE get_spin_up
+!------------------------------------------------------------------------
+!
+!------------------------------------------------------------------------
+! FIXME: to be uncommented
 ! SUBROUTINE get_spin_dn(spin_out)
 !     IMPLICIT NONE
 !     REAL(DP), INTENT(OUT) :: spin_out(3)
@@ -118,37 +132,38 @@ END SUBROUTINE get_dos_b
 !         END DO
 !     END DO
 !     DEALLOCATE(spnk)
-! END SUBROUTINE
-
-
-
+! END SUBROUTINE get_spin_dn
+!------------------------------------------------------------------------
+!
+!------------------------------------------------------------------------
 SUBROUTINE get_dos_nlayer(nlayer, dos_out)
+!! Calculate Green function and DOS for sub-surface layers
   INTEGER, INTENT(IN) :: nlayer
-  COMPLEX(DP), INTENT(OUT) :: dos_out(64)
+  REAL(DP), INTENT(OUT) :: dos_out(nlayer)
+  !
   INTEGER :: i, il, j, cnt
+  !
   IF (nlayer .lt. 1) RETURN
-  ! recurrence to calculate green_ilayer
+  !
+  ! Use recurrence relation to calculate Green function for sub-surface layers
   CALL set_green_layer(nlayer)
-  dos_out = czero
-  ! DO il = 1, nlayer
-  !     ! calculate trace and DOS
-  !     DO i = 1, nbulk
-  !         IF ( AIMAG(green_layer(i,i,il)) < 0 ) THEN
-  !             WRITE(*,'("negative DOS: green_",I," basis ",I3,", value: ",ES8.1)')  il, i, AIMAG(green_layer(i,i,il))
-  !             ! STOP
-  !         END IF
-  !         dos_out(i, il) = AIMAG(green_layer(i,i,il)) / PI
-  !     END DO
-  ! END DO
-  cnt = 1
-  do i = 41, 48
-    do j = 41, 48
-      dos_out(cnt) = green_layer(i,j,1)
-      cnt = cnt + 1
-    end do
-  end do
-END SUBROUTINE
-
+  !
+  ! Calculate DOS
+  dos_out = 0.d0
+  DO il = 1, nlayer
+    DO i = 1, nbulk
+      IF (AIMAG(green_layer(i, i, il)) < 0.d0) THEN
+        WRITE(*,'("WARNING: negative DOS: layer = ",I5," basis ",I5,", value: ",ES9.2)') &
+          il, i, AIMAG(green_layer(i,i,il))
+        ! STOP
+      ENDIF
+      dos_out(il) = dos_out(il) + AIMAG(green_layer(i, i, il)) / pi
+    ENDDO
+  ENDDO
+END SUBROUTINE get_dos_nlayer
+!------------------------------------------------------------------------
+!
+!------------------------------------------------------------------------
 SUBROUTINE get_spin_s(spin_out)
   IMPLICIT NONE
   REAL(DP), INTENT(OUT) :: spin_out(3)
@@ -167,36 +182,46 @@ SUBROUTINE get_spin_s(spin_out)
   END DO
   DEALLOCATE(spnk)
 END SUBROUTINE
-
+!------------------------------------------------------------------------
+!
+!------------------------------------------------------------------------
 SUBROUTINE set_green_layer(nl)
+!! Calculate Green function for sub-surface layers using recurrence relations
   IMPLICIT NONE
   INTEGER, INTENT(IN) :: nl
+  !
   INTEGER :: nl_set, il_from, il_to, il
   COMPLEX(DP), ALLOCATABLE :: green_layer_temp(:,:,:)
-  COMPLEX(DP), ALLOCATABLE, DIMENSION(:,:) :: temp_mat1, temp_mat2, temp_mat3
-  ! allocate green_layer appropriate size
-  ! and set the range of ilayer(il) to calculate green_layer
-  IF(ALLOCATED(green_layer)) THEN
-    nl_set = SIZE(green_layer,3)
-    IF (nl <= nl_set) RETURN
-    ! ELSE nl > nl_set, extend SIZE(green_layer,3) from nl_set to nl
-    ALLOCATE(green_layer_temp(nbulk,nbulk,nl_set))
-    green_layer_temp = green_layer
-    DEALLOCATE(green_layer)
-    ALLOCATE(green_layer(nbulk,nbulk,nl))
-    green_layer(:,:,1:nl_set) = green_layer_temp
-    DEALLOCATE(green_layer_temp)
-    il_from = nl_set+1
-    il_to = nl
+  COMPLEX(DP), ALLOCATABLE :: temp_mat1(:,:), temp_mat2(:,:), temp_mat3(:,:)
+  !
+  ! Allocate green_layer appropriate size and set the range of ilayer(il)
+  ! to calculate green_layer
+  IF (ALLOCATED(green_layer)) THEN
+    nl_set = SIZE(green_layer, 3)
+    IF (nl <= nl_set) THEN
+      ! green_layer already calculated.
+      RETURN
+    ELSE
+      ! green_layer is already calculated, but only for a few layers
+      ! extend the size of green_layer from nl_set to nl
+      ALLOCATE(green_layer_temp(nbulk, nbulk, nl_set))
+      green_layer_temp = green_layer
+      DEALLOCATE(green_layer)
+      ALLOCATE(green_layer(nbulk, nbulk, nl))
+      green_layer(:, :, 1:nl_set) = green_layer_temp
+      DEALLOCATE(green_layer_temp)
+      il_from = nl_set + 1
+      il_to = nl
+    ENDIF
   ELSE ! green_layer not allocated
-    ALLOCATE(green_layer(nbulk,nbulk,nl))
+    ALLOCATE(green_layer(nbulk, nbulk, nl))
     il_from = 1
     il_to = nl
   ENDIF
-
-  ! calculate green_layer using recurrence relations
+  !
+  ! Calculate green_layer using recurrence relations
   DO il = il_from, il_to
-    IF ((il==1) .AND. isslab) THEN
+    IF ((il == 1) .AND. isslab) THEN
       ! green_layer(:,:,1) = teff_mat + ( ( (teff_mat * h01^dagger) * green_s) * h01) * seff_mat
       ALLOCATE(temp_mat1(nbulk,nsurf))
       ALLOCATE(temp_mat2(nbulk,nsurf))
@@ -209,7 +234,7 @@ SUBROUTINE set_green_layer(nl)
       DEALLOCATE(temp_mat1)
       DEALLOCATE(temp_mat2)
       DEALLOCATE(temp_mat3)
-    ELSE IF((il==1) .AND. .NOT.(isslab)) THEN
+    ELSE IF((il == 1) .AND. .NOT.(isslab)) THEN
       ! temp_mat1 = t_mat * green_s
       ! green_layer(:,:,1) = green_s + temp_mat1 * s_mat
       ALLOCATE(temp_mat1(nbulk,nbulk))
@@ -217,7 +242,7 @@ SUBROUTINE set_green_layer(nl)
       CALL ZGEMM('N','N',nbulk,nbulk,nbulk,cone, t_mat, nbulk, green_s, nbulk,czero, temp_mat1, nbulk)
       CALL ZGEMM('N','N',nbulk,nbulk,nbulk,cone, temp_mat1, nbulk, s_mat, nbulk,cone, green_layer(:,:,1), nbulk)
       DEALLOCATE(temp_mat1)
-    ELSE IF ((il>1) .AND. isslab) THEN
+    ELSE IF ((il > 1) .AND. isslab) THEN
       ! green_layer(:,:,il) = teff_mat + ( (teff_mat * h12^dagger) * green_layer(:,:,il-1)) * s_mat
       ALLOCATE(temp_mat1(nbulk,nbulk))
       ALLOCATE(temp_mat2(nbulk,nbulk))
@@ -234,15 +259,19 @@ SUBROUTINE set_green_layer(nl)
       CALL ZGEMM('N','N',nbulk,nbulk,nbulk,cone, t_mat, nbulk, green_layer(:,:,il-1), nbulk,czero, temp_mat1, nbulk)
       CALL ZGEMM('N','N',nbulk,nbulk,nbulk,cone, temp_mat1, nbulk, s_mat, nbulk,cone, green_layer(:,:,il), nbulk)
       DEALLOCATE(temp_mat1)
-    END IF
-  END DO
-END SUBROUTINE
-
+    ENDIF
+  ENDDO
+END SUBROUTINE set_green_layer
+!------------------------------------------------------------------------
+!
+!------------------------------------------------------------------------
 SUBROUTINE pp_green_deallocate_green_layer()
   IMPLICIT NONE
   IF(ALLOCATED(green_layer)) DEALLOCATE(green_layer)
-END SUBROUTINE
-
+END SUBROUTINE pp_green_deallocate_green_layer
+!------------------------------------------------------------------------
+!
+!------------------------------------------------------------------------
 SUBROUTINE set_transfer_mat()
   COMPLEX(DP), ALLOCATABLE :: temp_mat(:,:)
   IF (isslab) THEN

@@ -47,7 +47,7 @@ program main
     ! ELSE
         ALLOCATE(dos_s0(num_energy))
         ALLOCATE(dos_b(num_energy))
-        IF (n_dos_layer>0) ALLOCATE(dos_layer(num_energy, 64))
+        IF (n_dos_layer>0) ALLOCATE(dos_layer(num_energy, n_dos_layer))
         IF (isspin) ALLOCATE(dos_spn_s(num_energy,3))
         inquire (iolength = irec) dos_s0
         open (unit = 9, file = "dos_surf00.out", form="unformatted", access="direct", recl=irec)

@@ -59,9 +59,9 @@ SUBROUTINE hamiltonian_setup()
   IF (ierr /= 0) CALL io_error('Error in allocation in hamiltonian_setup')
   !
   ! reading seedname_hr.dat
-  IF (isslab .AND. .NOT. hr_from_bulk_and_slab) THEN
+  IF (isslab .AND. .NOT. hr_stitching) THEN
     CALL read_hamiltonian(0, hr0, rvec0, ndegen0, nrpts0, TRIM(seedname))
-  ELSE IF (isslab .AND. hr_from_bulk_and_slab) THEN
+  ELSE IF (isslab .AND. hr_stitching) THEN
     CALL read_hamiltonian(0, hr0, rvec0, ndegen0, nrpts0, TRIM(seedname)//".bulk")
     CALL read_hamiltonian(bulk_rz, hr1, rvec1, ndegen1, nrpts1, TRIM(seedname)//".bulk")
     CALL read_hamiltonian(0, hr0s, rvec0s, ndegen0s, nrpts0s, TRIM(seedname)//".slab")
@@ -106,7 +106,7 @@ SUBROUTINE hamiltonian_tb_to_k()
   INTEGER :: i
   !
   IF (isslab) THEN
-    IF (.NOT. hr_from_bulk_and_slab) THEN
+    IF (.NOT. hr_stitching) THEN
       ALLOCATE(htemp(num_hr_wann,num_hr_wann))
       CALL k_operator(nrpts0, hr0, rvec0, ndegen0, kx, ky, htemp)
       h00 = htemp(ind_0, ind_0)
@@ -114,7 +114,7 @@ SUBROUTINE hamiltonian_tb_to_k()
       h11 = htemp(ind_1, ind_1)
       h12 = htemp(ind_1, ind_2)
       DEALLOCATE(htemp)
-    ELSE ! isslab and hr_from_bulk_and_slab
+    ELSE ! isslab and hr_stitching
       CALL k_operator(nrpts0, hr0, rvec0, ndegen0, kx, ky, h11)
       CALL k_operator(nrpts1, hr1, rvec1, ndegen1, kx, ky, h12)
       ALLOCATE(htemp(num_hr_wann,num_hr_wann))
@@ -127,7 +127,7 @@ SUBROUTINE hamiltonian_tb_to_k()
         h00(i,i) = h00(i,i) - bulk_shift
       ENDDO
       DEALLOCATE(htemp)
-    ENDIF ! hr_from_bulk_and_slab
+    ENDIF ! hr_stitching
   ELSE !.NOT. isslab
     CALL k_operator(nrpts0, hr0, rvec0, ndegen0, kx, ky, h11)
     CALL k_operator(nrpts1, hr1, rvec1, ndegen1, kx, ky, h12)

@@ -17,7 +17,7 @@ MODULE parameters
   LOGICAL :: isslab
   !! Is the calculation with surface modification. If .false., all principal
   !! layers, including the surface principal layer, are identical.
-  LOGICAL :: hr_from_bulk_and_slab
+  LOGICAL :: hr_stitching
   !! Is the calculation with surface (slab) and bulk matching.
   !! If .true., read seedname.bulk_hr.dat and seedname.slab_hr.dat file
   !! If .false., read seedname_hr.dat file only, and set surface and bulk
@@ -36,7 +36,7 @@ MODULE parameters
   INTEGER, ALLOCATABLE :: ind_2(:)
   !! (nbulk) Indices of basis functions for second bulk principal layer.
   !! Used to set the bulk-bulk interlayer hopping.
-  !! Used only if isslab is true and hr_from_bulk_and_slab is false.
+  !! Used only if isslab is true and hr_stitching is false.
   INTEGER :: bulk_rz
   !! 1 or -1: append bulk layer along +z or -z direction
   REAL(DP) :: hopping_tol
@@ -98,7 +98,7 @@ CONTAINS
 !------------------------------------------------------------------------
 SUBROUTINE param_write
   WRITE(*,'("isslab = ", L)') isslab
-  WRITE(*,'("hr_from_bulk_and_slab = ", L)') hr_from_bulk_and_slab
+  WRITE(*,'("hr_stitching = ", L)') hr_stitching
   WRITE(*,'("nsurf = ", I)') nsurf
   WRITE(*,'("nbulk = ", I)') nbulk
   WRITE(*,'("bulk_rz = ", I)') bulk_rz
@@ -131,16 +131,16 @@ SUBROUTINE param_read
   CALL param_get_keyword('max_n_iter', found, i_value=max_n_iter)
   CALL param_get_keyword('isspin', found, l_value=isspin)
   CALL param_get_keyword('isslab', found, l_value=isslab)
-  CALL param_get_keyword('hr_from_bulk_and_slab', found, l_value=hr_from_bulk_and_slab)
+  CALL param_get_keyword('hr_stitching', found, l_value=hr_stitching)
   if (isslab .AND. .NOT. found) &
-    CALL io_error('If isslab, hr_from_bulk_and_slab must be set.')
+    CALL io_error('If isslab, hr_stitching must be set.')
   CALL param_get_keyword('nsurf', found, i_value=nsurf)
   CALL param_get_keyword('nbulk', found, i_value=nbulk)
   CALL param_get_keyword('bulk_rz', found, i_value=bulk_rz)
   !
   ! Check validity of input parameters
-  if (isslab .AND. (.NOT. hr_from_bulk_and_slab) .AND. (nsurf <= nbulk)) &
-    CALL io_error('ERROR: if isslab and not hr_from_bulk_and_slab, nsurf must be greater than nbulk')
+  if (isslab .AND. (.NOT. hr_stitching) .AND. (nsurf <= nbulk)) &
+    CALL io_error('ERROR: if isslab and not hr_stitching, nsurf must be greater than nbulk')
   !
   IF (.NOT. isslab) THEN
     nsurf = nbulk
@@ -152,7 +152,7 @@ SUBROUTINE param_read
     ALLOCATE(ind_1(nbulk))
     CALL param_get_range_vector('ind_1',found,nbulk,.false.,ind_1)
   ENDIF
-  IF (isslab .and. .not. hr_from_bulk_and_slab) THEN
+  IF (isslab .and. .not. hr_stitching) THEN
     ALLOCATE(ind_2(nbulk))
     CALL param_get_range_vector('ind_2',found,nbulk,.false.,ind_2)
   ENDIF

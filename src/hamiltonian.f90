@@ -91,7 +91,7 @@ SUBROUTINE hamiltonian_setup()
     ENDIF ! hr_stitching
   ELSE ! .NOT. isslab
     CALL read_hamiltonian(0, hr0, rvec0, ndegen0, nrpts0, TRIM(seedname))
-    CALL read_hamiltonian(1, hr1, rvec1, ndegen1, nrpts1, TRIM(seedname))
+    CALL read_hamiltonian(bulk_rz, hr1, rvec1, ndegen1, nrpts1, TRIM(seedname))
   ENDIF
 !------------------------------------------------------------------------
 END SUBROUTINE hamiltonian_setup

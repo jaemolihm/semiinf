@@ -40,10 +40,11 @@ MODULE parameters
   !! Used to set the bulk-bulk interlayer hopping.
   !! Used only if isslab is true and hr_stitching is false.
   INTEGER :: bulk_rz
-  !! 1 or -1. Determines the surface normal direction.
+  !! 1 or -1. Determines the surface normal direction. Default is 1.
   !! From bulk _hr.dat, read matrix elements <m0|H|nR> with R_3 == bulk_rz
-  !! Used only if isslab is false.
-  !! If isslab is true, surface normal direction is determined by ind_0,1,2.
+  !! Used only if isslab is false or hr_stitching is true.
+  !! If isslab is true and hr_stitching is false, the surface normal direction
+  !! is determined by ind_0,1,2.
   REAL(DP) :: hopping_tol
   !! Convergence criterion of the iterative surface Green function calculation
   INTEGER :: max_n_iter

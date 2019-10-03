@@ -38,7 +38,10 @@ MODULE parameters
   !! Used to set the bulk-bulk interlayer hopping.
   !! Used only if isslab is true and hr_stitching is false.
   INTEGER :: bulk_rz
-  !! 1 or -1: append bulk layer along +z or -z direction
+  !! 1 or -1. Determines the surface normal direction.
+  !! From bulk _hr.dat, read matrix elements <m0|H|nR> with R_3 == bulk_rz
+  !! Used only if isslab is false.
+  !! If isslab is true, surface normal direction is determined by ind_0,1,2.
   REAL(DP) :: hopping_tol
   !! Convergence criterion of the iterative surface Green function calculation
   INTEGER :: max_n_iter
@@ -57,8 +60,9 @@ MODULE parameters
   !! If true, read _spnr.dat file and calculate spin-DOS
   !
   ! Variables related to kpoint
-  LOGICAL :: kpoint_is_path
-  !! true if k point is given by path, false if given by grid.
+  CHARACTER(4) :: kpoint_type
+  !! The way k point is given. 'path' or 'grid' only.
+  !! TODO: implement kpoint_type == 'file'
   !
   CHARACTER(LEN=256) :: seedname
   CHARACTER(LEN=256) :: input_filename
@@ -173,17 +177,11 @@ SUBROUTINE param_read
   ENDDO
   !
   ! kpoints
-  CALL param_get_keyword('kpoint_type',found,c_value=buffer)
-  IF (buffer == 'path') THEN
-    kpoint_is_path = .TRUE.
-  ELSE IF (buffer == 'grid') THEN
-    kpoint_is_path = .FALSE.
-  ELSE
-    CALL io_error('kpoint_type must be path or grid')
-  ENDIF
+  CALL param_get_keyword('kpoint_type', found, c_value=kpoint_type)
+  IF (.NOT. found) CALL io_error('kpoint_type must be set')
   !
   ! set kpoints path
-  IF (kpoint_is_path) THEN
+  IF (kpoint_type == 'path') THEN
     bands_num_spec_points=0
     CALL param_get_block_length('kpoint_path', found, i_temp)
     IF (found) THEN
@@ -231,8 +229,7 @@ SUBROUTINE param_read
     ENDDO
     xval(num_kpoint)=sum(kpath_len)
     plot_kpoint(:,num_kpoint)=bands_spec_points(:,bands_num_spec_points)
-  ELSE
-    ! .NOT. kpoint_is_path, kpoint_type = 'grid'
+  ELSE IF (kpoint_type == 'grid') THEN
     CALL param_get_keyword('grid_1',found,i_value=kpoint_grid_num(1))
     CALL param_get_keyword('grid_2',found,i_value=kpoint_grid_num(2))
     num_kpoint = kpoint_grid_num(1) * kpoint_grid_num(2)
@@ -243,9 +240,11 @@ SUBROUTINE param_read
             MOD(REAL(loop_i,dp) / REAL(kpoint_grid_num(1),dp) + 0.5_dp, 1.0_dp) - 0.5_dp
         plot_kpoint(2,(loop_j-1)*kpoint_grid_num(1)+loop_i) = &
             MOD(REAL(loop_j,dp) / REAL(kpoint_grid_num(2),dp) + 0.5_dp, 1.0_dp) - 0.5_dp
-      END DO
-    END DO
-  END IF
+      ENDDO
+    ENDDO
+  ELSE
+    CALL io_error('kpoint_type not understood. It must be path or grid.')
+  ENDIF
 !------------------------------------------------------------------------
 END SUBROUTINE param_read
 !------------------------------------------------------------------------

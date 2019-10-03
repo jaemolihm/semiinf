@@ -141,8 +141,8 @@ END SUBROUTINE hamiltonian_tb_to_k
 !------------------------------------------------------------------------
 SUBROUTINE read_hamiltonian(nr3, hr_nr3, rvec_nr3, ndegen_nr3, irpts_nr3, prefix)
 !------------------------------------------------------------------------
-!! Read seedname_hr.dat file, parse hamiltonian elements such that
-!! lattice vector along dir=3 is nr3
+!! Read seedname_hr.dat file, parse hamiltonian elements <m0|H|nR>
+!! such that R(3) == nr3
 !------------------------------------------------------------------------
   USE comms, ONLY : find_free_unit
   IMPLICIT NONE

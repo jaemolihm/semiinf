@@ -43,16 +43,23 @@ PROGRAM semiinf
   !
   ! Open units for binary file output
   INQUIRE(IOLENGTH=irec) dos_s0
+  iunsurf = find_free_unit()
   OPEN(UNIT=iunsurf, FILE="dos_surf00.out", FORM="unformatted", ACCESS="direct", RECL=irec)
+  !
   INQUIRE(IOLENGTH=irec) dos_b
+  iunbulk = find_free_unit()
   OPEN(UNIT=iunbulk, FILE="dos_bulk.out", FORM="unformatted", ACCESS="direct", RECL=irec)
   IF (isspin) THEN
+    iunsurfsx = find_free_unit()
     OPEN(UNIT=iunsurfsx, FILE="dos_surf_sx.out", FORM="unformatted", ACCESS="direct", RECL=irec)
+    iunsurfsy = find_free_unit()
     OPEN(UNIT=iunsurfsy, FILE="dos_surf_sy.out", FORM="unformatted", ACCESS="direct", RECL=irec)
+    iunsurfsz = find_free_unit()
     OPEN(UNIT=iunsurfsz, FILE="dos_surf_sz.out", FORM="unformatted", ACCESS="direct", RECL=irec)
   ENDIF
   IF (n_dos_layer > 0) THEN
     INQUIRE(IOLENGTH=irec) dos_layer(:,:)
+    iunlayer = find_free_unit()
     OPEN(UNIT=iunlayer, FILE="dos_layer.out", FORM="unformatted", ACCESS="direct", RECL=irec)
   ENDIF
   !

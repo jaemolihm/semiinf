@@ -2,13 +2,13 @@
 
 include ../make.inc
 
-OBJECTS=comms.o  hamiltonian.o  iter_bulk.o  iter_slab.o  main.o  parameters.o  postprocess_green.o
+OBJECTS=comms.o  hamiltonian.o  iter_bulk.o  iter_slab.o  semiinf.o  parameters.o  postprocess_green.o
 
 default: all
 
 all: semiinf
 
-semiinf: comms.o  hamiltonian.o  iter_bulk.o  iter_slab.o  main.o  parameters.o  postprocess_green.o
+semiinf: comms.o  hamiltonian.o  iter_bulk.o  iter_slab.o  semiinf.o  parameters.o  postprocess_green.o
 	$(MPIF90) ${FCOPTS} ${LIBS} -o semiinf.x $^
 
 comms.o:
@@ -29,9 +29,9 @@ iter_bulk.o: comms.o parameters.o hamiltonian.o postprocess_green.o
 iter_slab.o: comms.o parameters.o hamiltonian.o postprocess_green.o
 	$(MPIF90) ${FCOPTS} -c iter_slab.f90
 
-main.o: comms.o parameters.o hamiltonian.o postprocess_green.o iter_bulk.o iter_slab.o
-	$(MPIF90) ${FCOPTS} -c main.f90
+semiinf.o: comms.o parameters.o hamiltonian.o postprocess_green.o iter_bulk.o iter_slab.o
+	$(MPIF90) ${FCOPTS} -c semiinf.f90
 	- ( cd ../; ln -fs src/semiinf.x . ; )
 
 clean:
-	- rm -f semiinf.x ../semiinf.x *.o *.mod 
+	- rm -f semiinf.x ../semiinf.x *.o *.mod

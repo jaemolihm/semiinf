@@ -14,6 +14,8 @@ MODULE parameters
   INTEGER, PARAMETER :: maxlen = 256
   !
   ! --------------------- input variables ---------------------
+  CHARACTER(LEN=256) :: seedname
+  !! Prefix of the .dat files.
   LOGICAL :: isslab
   !! Is the calculation with surface modification. If .false., all principal
   !! layers, including the surface principal layer, are identical.
@@ -71,9 +73,6 @@ MODULE parameters
   INTEGER :: nkgrid_2
   !! Number of k point grids along y direction. Used only if kpoint_type is grid
   !
-  CHARACTER(LEN=256) :: seedname
-  CHARACTER(LEN=256) :: input_filename
-  !
   ! --------------------- derived variables ---------------------
   ! These variables are not directly read, but derived from the input variables
   INTEGER :: num_energy
@@ -90,6 +89,8 @@ MODULE parameters
   ! FIXME: move these to elsewhere?
   LOGICAL :: flag_converged
   INTEGER :: n_iter
+  CHARACTER(LEN=256) :: input_filename
+  !! name of the input file. Read as inline argument.
   !
   ! --------------------- private variables ---------------------
   ! For reading kpoint path

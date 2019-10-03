@@ -159,9 +159,12 @@ SUBROUTINE param_read
   !
   ! energy
   CALL param_get_keyword('sigma', found, r_value=sigma)
-  CALL param_get_keyword('e_min', found, r_value=dos_e_min)
-  CALL param_get_keyword('e_max', found, r_value=dos_e_max)
-  CALL param_get_keyword('e_step', found, r_value=dos_e_step)
+  CALL param_get_keyword('dos_e_min', found, r_value=dos_e_min)
+  IF (.NOT. found) CALL io_error("dos_e_min must be set")
+  CALL param_get_keyword('dos_e_max', found, r_value=dos_e_max)
+  IF (.NOT. found) CALL io_error("dos_e_max must be set")
+  CALL param_get_keyword('dos_e_step', found, r_value=dos_e_step)
+  IF (.NOT. found) CALL io_error("dos_e_step must be set")
   num_energy = NINT((dos_e_max - dos_e_min) / dos_e_step)
   dos_e_step = (dos_e_max - dos_e_min) / (num_energy-1)
   ALLOCATE(energy(num_energy))

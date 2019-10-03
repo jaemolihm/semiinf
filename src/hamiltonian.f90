@@ -48,24 +48,24 @@ SUBROUTINE hamiltonian_setup()
   !
   ! allocation
   IF (isslab) THEN
-    ALLOCATE(h00(nsurf,nsurf), stat=ierr)
-    ALLOCATE(h01(nsurf,nbulk), stat=ierr)
-    ALLOCATE(h11(nbulk,nbulk), stat=ierr)
-    ALLOCATE(h12(nbulk,nbulk), stat=ierr)
+    ALLOCATE(h00(nsurf,nsurf), STAT=ierr)
+    ALLOCATE(h01(nsurf,nbulk), STAT=ierr)
+    ALLOCATE(h11(nbulk,nbulk), STAT=ierr)
+    ALLOCATE(h12(nbulk,nbulk), STAT=ierr)
   ELSE
-    ALLOCATE(h11(nbulk,nbulk), stat=ierr)
-    ALLOCATE(h12(nbulk,nbulk), stat=ierr)
+    ALLOCATE(h11(nbulk,nbulk), STAT=ierr)
+    ALLOCATE(h12(nbulk,nbulk), STAT=ierr)
   ENDIF
   IF (ierr /= 0) CALL io_error('Error in allocation in hamiltonian_setup')
   !
   ! reading seedname_hr.dat
   IF (isslab_hamil) THEN
-    CALL read_hamiltonian(0, hr0, rvec0, ndegen0, nrpts0)
+    CALL read_hamiltonian(0, hr0, rvec0, ndegen0, nrpts0, TRIM(seedname))
   ELSE IF (isslab_match) THEN
-    CALL read_hamiltonian(0, hr0, rvec0, ndegen0, nrpts0, trim(seedname)//".bulk")
-    CALL read_hamiltonian(bulk_rz, hr1, rvec1, ndegen1, nrpts1, trim(seedname)//".bulk")
-    CALL read_hamiltonian(0, hr0s, rvec0s, ndegen0s, nrpts0s, trim(seedname)//".slab")
-    seedname = trim(seedname)//".slab"
+    CALL read_hamiltonian(0, hr0, rvec0, ndegen0, nrpts0, TRIM(seedname)//".bulk")
+    CALL read_hamiltonian(bulk_rz, hr1, rvec1, ndegen1, nrpts1, TRIM(seedname)//".bulk")
+    CALL read_hamiltonian(0, hr0s, rvec0s, ndegen0s, nrpts0s, TRIM(seedname)//".slab")
+    seedname = TRIM(seedname)//".slab"
 
     ! calculate the required onsite energy shift
     ! bulk_shift = average(hr0s_onsite - hr0_onsite)
@@ -84,12 +84,12 @@ SUBROUTINE hamiltonian_setup()
         ENDDO
       ENDIF
     ENDDO
-    bulk_shift = CMPLX(REAL(bulk_shift / nbulk, dp), 0.0_dp, dp)
+    bulk_shift = CMPLX(REAL(bulk_shift / nbulk, DP), 0.0_dp, DP)
     IF (is_root) WRITE(*,*) "bulk_shift = ", bulk_shift
     IF (is_root) WRITE(*,*) "Note: this may(should) be small if util_match is used to generate slab hr.dat file"
   ELSE
-    CALL read_hamiltonian(0, hr0, rvec0, ndegen0, nrpts0)
-    CALL read_hamiltonian(1, hr1, rvec1, ndegen1, nrpts1)
+    CALL read_hamiltonian(0, hr0, rvec0, ndegen0, nrpts0, TRIM(seedname))
+    CALL read_hamiltonian(1, hr1, rvec1, ndegen1, nrpts1, TRIM(seedname))
   ENDIF
 !------------------------------------------------------------------------
 END SUBROUTINE hamiltonian_setup
@@ -144,70 +144,72 @@ END SUBROUTINE hamiltonian_tb_to_k
 !------------------------------------------------------------------------
 !
 !------------------------------------------------------------------------
-SUBROUTINE read_hamiltonian(nr3,hr_nr3,rvec_nr3,ndegen_nr3,irpts_nr3,seedname_)
+SUBROUTINE read_hamiltonian(nr3, hr_nr3, rvec_nr3, ndegen_nr3, irpts_nr3, prefix)
 !------------------------------------------------------------------------
 !! Read seedname_hr.dat file, parse hamiltonian elements such that
 !! lattice vector along dir=3 is nr3
 !------------------------------------------------------------------------
+  USE comms, ONLY : find_free_unit
   IMPLICIT NONE
   INTEGER, INTENT(IN) :: nr3
   COMPLEX(DP), ALLOCATABLE, INTENT(INOUT) :: hr_nr3(:,:,:)
   REAL(DP), ALLOCATABLE, INTENT(INOUT) :: rvec_nr3(:,:)
   REAL(DP), ALLOCATABLE, INTENT(INOUT) :: ndegen_nr3(:)
   INTEGER, INTENT(OUT) :: irpts_nr3
-  CHARACTER(*), INTENT(IN), optional :: seedname_
-
-  CHARACTER(LEN=80) :: filename
-
-  INTEGER :: irpts, iw, ni, nj, ioerror, nrpts, ir1, ir2, ir3
+  CHARACTER(*), INTENT(IN) :: prefix
+  !
+  INTEGER :: iun
+  INTEGER :: irpts, iw, ni, nj, ierr, nrpts, ir1, ir2, ir3
   REAL(DP) :: hr_re, hr_im
   COMPLEX(DP), ALLOCATABLE :: hr_nr3_tmp(:,:,:)
   REAL(DP), ALLOCATABLE :: ndegen(:), rvec_nr3_tmp(:,:), ndegen_nr3_tmp(:)
+  CHARACTER(LEN=256) :: filename
   CHARACTER(LEN=80) :: buffer
   !
-  ioerror = 0
-  irpts_nr3 = 0
+  iun = find_free_unit()
+  filename = TRIM(prefix)//'_hr.dat'
+  OPEN(UNIT=iun, FILE=TRIM(filename), ACTION='read', IOSTAT=ierr)
+  IF (ierr /= 0) CALL io_error('Error opening ' // TRIM(filename))
   !
-  filename = TRIM(seedname)//'_hr.dat'
-  IF (PRESENT(seedname_)) filename = TRIM(seedname_) // '_hr.dat'
-  OPEN(UNIT=10, FILE=filename, ACTION='read', IOSTAT=ioerror)
-  IF (ioerror /= 0) CALL io_error('Error opening '//filename)
-  !
-  READ(10, '(80a)', iostat=ioerror)buffer
-  READ(10, '(80a)', iostat=ioerror)buffer
+  READ(iun, '(80a)', IOSTAT=ierr) buffer
+  READ(iun, '(80a)', IOSTAT=ierr) buffer
   READ(buffer, *) num_hr_wann
-  READ(10, '(80a)', iostat=ioerror)buffer
+  READ(iun, '(80a)', IOSTAT=ierr) buffer
   READ(buffer, *) nrpts
-  IF(is_root) WRITE(*,*) 'begin reading ' // filename
+  IF(is_root) WRITE(*,*) 'begin reading ' // TRIM(filename)
   IF(is_root) WRITE(*,*) 'rvec_z("nr3") = ', nr3
   IF(is_root) WRITE(*,*) 'num_hr_wann = ', num_hr_wann
   IF(is_root) WRITE(*,*) 'nrpts = ', nrpts
-
+  !
   ALLOCATE(ndegen(nrpts))
   ALLOCATE(hr_nr3_tmp(num_hr_wann, num_hr_wann, nrpts))
   ALLOCATE(rvec_nr3_tmp(2, nrpts))
   ALLOCATE(ndegen_nr3_tmp(nrpts))
-
+  !
   DO irpts = 1, (nrpts-1) / 15
-    READ(10, *) ndegen((irpts-1)*15+1:(irpts-1)*15+15)
+    READ(iun, *, IOSTAT=ierr) ndegen((irpts-1)*15+1:(irpts-1)*15+15)
   ENDDO
-  READ(10, *) ndegen(((nrpts-1)/15)*15+1:nrpts)
+  READ(iun, *, IOSTAT=ierr) ndegen(((nrpts-1)/15)*15+1:nrpts)
+  IF (ierr/=0) CALL io_error('Error reading file: ' // filename)
+  !
+  irpts_nr3 = 0
   DO irpts = 1, nrpts
     DO iw = 1, num_hr_wann**2
-      READ (10,'(5I5,2F12.6)',iostat=ioerror) ir1, ir2, ir3, ni, nj, hr_re, hr_im
-      IF (ioerror/=0) CALL io_error('Error reading file: ' // filename)
+      READ (iun,'(5I5,2F12.6)', IOSTAT=ierr) ir1, ir2, ir3, ni, nj, hr_re, hr_im
+      IF (ierr/=0) CALL io_error('Error reading file: ' // filename)
       IF (ir3 == nr3) THEN
         IF (iw == 1) THEN
           irpts_nr3 = irpts_nr3 + 1
-          rvec_nr3_tmp(:, irpts_nr3) = (/ ir1, ir2 /)
+          rvec_nr3_tmp(1, irpts_nr3) = ir1
+          rvec_nr3_tmp(2, irpts_nr3) = ir2
           ndegen_nr3_tmp(irpts_nr3) = ndegen(irpts)
         ENDIF
         hr_nr3_tmp(ni, nj, irpts_nr3) = CMPLX(hr_re, hr_im, DP)
       ENDIF
     ENDDO
   ENDDO
-  CLOSE(10)
-
+  CLOSE(iun)
+  !
   ! change size of array to known(read) size
   ALLOCATE(hr_nr3(num_hr_wann, num_hr_wann, irpts_nr3))
   ALLOCATE(rvec_nr3(2, irpts_nr3))
@@ -221,7 +223,7 @@ SUBROUTINE read_hamiltonian(nr3,hr_nr3,rvec_nr3,ndegen_nr3,irpts_nr3,seedname_)
   DEALLOCATE(ndegen)
   !
   IF (is_root) write(*,'("Hamiltonian_",I2," shape : ",3I5)') nr3, SHAPE(hr_nr3)
-  IF (is_root) write(*,*) 'end reading ' // filename
+  IF (is_root) write(*,*) 'end reading ' // TRIM(filename)
 !------------------------------------------------------------------------
 END SUBROUTINE read_hamiltonian
 !------------------------------------------------------------------------
@@ -233,16 +235,16 @@ SUBROUTINE hamiltonian_deallocate()
 !------------------------------------------------------------------------
   IMPLICIT NONE
   INTEGER :: ierr
-  DEALLOCATE(h11, stat=ierr)
-  DEALLOCATE(h12, stat=ierr)
-  IF(ALLOCATED(h00)) DEALLOCATE(h00,stat=ierr)
-  IF(ALLOCATED(h01)) DEALLOCATE(h01,stat=ierr)
-  IF(ALLOCATED(hr0)) DEALLOCATE(hr0,stat=ierr)
-  IF(ALLOCATED(hr1)) DEALLOCATE(hr1,stat=ierr)
-  IF(ALLOCATED(rvec0)) DEALLOCATE(rvec0,stat=ierr)
-  IF(ALLOCATED(rvec1)) DEALLOCATE(rvec1,stat=ierr)
-  IF(ALLOCATED(ndegen0)) DEALLOCATE(ndegen0,stat=ierr)
-  IF(ALLOCATED(ndegen1)) DEALLOCATE(ndegen1,stat=ierr)
+  DEALLOCATE(h11, STAT=ierr)
+  DEALLOCATE(h12, STAT=ierr)
+  IF(ALLOCATED(h00)) DEALLOCATE(h00,STAT=ierr)
+  IF(ALLOCATED(h01)) DEALLOCATE(h01,STAT=ierr)
+  IF(ALLOCATED(hr0)) DEALLOCATE(hr0,STAT=ierr)
+  IF(ALLOCATED(hr1)) DEALLOCATE(hr1,STAT=ierr)
+  IF(ALLOCATED(rvec0)) DEALLOCATE(rvec0,STAT=ierr)
+  IF(ALLOCATED(rvec1)) DEALLOCATE(rvec1,STAT=ierr)
+  IF(ALLOCATED(ndegen0)) DEALLOCATE(ndegen0,STAT=ierr)
+  IF(ALLOCATED(ndegen1)) DEALLOCATE(ndegen1,STAT=ierr)
   IF (ierr /= 0) CALL io_error('Error in allocation in hamiltonian_ALLOCATE_slab')
 !------------------------------------------------------------------------
 END SUBROUTINE hamiltonian_deallocate

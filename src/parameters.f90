@@ -62,7 +62,14 @@ MODULE parameters
   ! Variables related to kpoint
   CHARACTER(4) :: kpoint_type
   !! The way k point is given. 'path' or 'grid' only.
+  !! path: the kpoints are determined using the wannier90 kpoint path algorithm
+  !! grid: the kpoints are chosen as a grid in the 2d BZ
+  !! TODO: enable the choice of the region to make the kpoint grid
   !! TODO: implement kpoint_type == 'file'
+  INTEGER :: nkgrid_1
+  !! Number of k point grids along x direction. Used only if kpoint_type is grid
+  INTEGER :: nkgrid_2
+  !! Number of k point grids along y direction. Used only if kpoint_type is grid
   !
   CHARACTER(LEN=256) :: seedname
   CHARACTER(LEN=256) :: input_filename
@@ -91,8 +98,6 @@ MODULE parameters
   INTEGER, PRIVATE :: bands_num_points
   INTEGER, PRIVATE :: bands_num_spec_points
   REAL(DP), ALLOCATABLE, PRIVATE :: bands_spec_points(:,:)
-  ! For reading kpoint grid
-  INTEGER, PRIVATE :: kpoint_grid_num(2)
   ! Others
   INTEGER, PRIVATE :: num_lines
   INTEGER, PRIVATE :: itemp1, itemp2
@@ -116,7 +121,7 @@ SUBROUTINE param_read
 !------------------------------------------------------------------------
   IMPLICIT NONE
   LOGICAL :: found
-  INTEGER :: ierr, i_temp, loop_spts, loop_i, loop_j, counter
+  INTEGER :: ierr, i_temp, loop_spts, loop_i, loop_j, counter, ik
   REAL(DP) :: vec(2)
   REAL(DP), ALLOCATABLE :: xval(:), kpath_len(:)
   INTEGER, ALLOCATABLE :: kpath_pts(:)
@@ -230,16 +235,21 @@ SUBROUTINE param_read
     xval(num_kpoint)=sum(kpath_len)
     plot_kpoint(:,num_kpoint)=bands_spec_points(:,bands_num_spec_points)
   ELSE IF (kpoint_type == 'grid') THEN
-    CALL param_get_keyword('grid_1',found,i_value=kpoint_grid_num(1))
-    CALL param_get_keyword('grid_2',found,i_value=kpoint_grid_num(2))
-    num_kpoint = kpoint_grid_num(1) * kpoint_grid_num(2)
-    ALLOCATE(plot_kpoint(2,num_kpoint), stat=ierr)
-    DO loop_j = 1, kpoint_grid_num(2)
-      DO loop_i = 1, kpoint_grid_num(1)
-        plot_kpoint(1,(loop_j-1)*kpoint_grid_num(1)+loop_i) = &
-            MOD(REAL(loop_i,dp) / REAL(kpoint_grid_num(1),dp) + 0.5_dp, 1.0_dp) - 0.5_dp
-        plot_kpoint(2,(loop_j-1)*kpoint_grid_num(1)+loop_i) = &
-            MOD(REAL(loop_j,dp) / REAL(kpoint_grid_num(2),dp) + 0.5_dp, 1.0_dp) - 0.5_dp
+    CALL param_get_keyword('nkgrid_1', found, i_value=nkgrid_1)
+    IF (.NOT. found) CALL io_error('If kpoint_type is grid, nkgrid_1 must be set')
+    CALL param_get_keyword('nkgrid_2', found, i_value=nkgrid_2)
+    IF (.NOT. found) CALL io_error('If kpoint_type is grid, nkgrid_2 must be set')
+    !
+    num_kpoint = nkgrid_1 * nkgrid_2
+    ALLOCATE(plot_kpoint(2, num_kpoint), STAT=ierr)
+    ik = 0
+    DO loop_j = 1, nkgrid_1
+      DO loop_i = 1, nkgrid_2
+        ik = ik + 1
+        plot_kpoint(1,ik) = &
+            MOD(REAL(loop_i, DP) / REAL(nkgrid_1, DP) + 0.5_dp, 1.0_dp) - 0.5_dp
+        plot_kpoint(2,ik) = &
+            MOD(REAL(loop_j, DP) / REAL(nkgrid_2, DP) + 0.5_dp, 1.0_dp) - 0.5_dp
       ENDDO
     ENDDO
   ELSE

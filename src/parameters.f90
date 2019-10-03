@@ -225,6 +225,7 @@ SUBROUTINE param_read
     CALL param_get_keyword('grid_1',found,i_value=kpoint_grid_num(1))
     CALL param_get_keyword('grid_2',found,i_value=kpoint_grid_num(2))
     num_kpoint = kpoint_grid_num(1) * kpoint_grid_num(2)
+    ALLOCATE(plot_kpoint(3,num_kpoint), stat=ierr)
     DO loop_j = 1, kpoint_grid_num(2)
       DO loop_i = 1, kpoint_grid_num(1)
         plot_kpoint(1,(loop_j-1)*kpoint_grid_num(1)+loop_i) = &

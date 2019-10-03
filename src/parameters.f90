@@ -28,11 +28,15 @@ MODULE parameters
   !! Number of basis functions for the surface principal layer
   !! If .not. isslab, automatically set to nbulk.
   INTEGER, ALLOCATABLE :: ind_0(:)
-  !! Indices for hij
+  !! (nsurf) Indices of basis functions for surface principal layer.
+  !! Used only if isslab is true.
   INTEGER, ALLOCATABLE :: ind_1(:)
-  !! Indices for hij
+  !! (nbulk) Indices of basis functions for bulk principal layer.
+  !! Used only if isslab is true.
   INTEGER, ALLOCATABLE :: ind_2(:)
-  !! Indices for hij
+  !! (nbulk) Indices of basis functions for second bulk principal layer.
+  !! Used to set the bulk-bulk interlayer hopping.
+  !! Used only if isslab is true and hr_from_bulk_and_slab is false.
   INTEGER :: bulk_rz
   !! 1 or -1: append bulk layer along +z or -z direction
   REAL(DP) :: hopping_tol
@@ -138,16 +142,20 @@ SUBROUTINE param_read
   if (isslab .AND. (.NOT. hr_from_bulk_and_slab) .AND. (nsurf <= nbulk)) &
     CALL io_error('ERROR: if isslab and not hr_from_bulk_and_slab, nsurf must be greater than nbulk')
   !
+  IF (.NOT. isslab) THEN
+    nsurf = nbulk
+  ENDIF
+  !
   IF (isslab) THEN
     ALLOCATE(ind_0(nsurf))
     CALL param_get_range_vector('ind_0',found,nsurf,.false.,ind_0)
-  ELSE
-    nsurf = nbulk
+    ALLOCATE(ind_1(nbulk))
+    CALL param_get_range_vector('ind_1',found,nbulk,.false.,ind_1)
   ENDIF
-  ALLOCATE(ind_1(nbulk))
-  CALL param_get_range_vector('ind_1',found,nbulk,.false.,ind_1)
-  ALLOCATE(ind_2(nbulk))
-  CALL param_get_range_vector('ind_2',found,nbulk,.false.,ind_2)
+  IF (isslab .and. .not. hr_from_bulk_and_slab) THEN
+    ALLOCATE(ind_2(nbulk))
+    CALL param_get_range_vector('ind_2',found,nbulk,.false.,ind_2)
+  ENDIF
   !
   ! energy
   CALL param_get_keyword('sigma',  found, r_value=sigma)

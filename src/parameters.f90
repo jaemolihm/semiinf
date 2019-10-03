@@ -19,8 +19,6 @@ MODULE parameters
   !! is the calculation with surface + bulk matching
   LOGICAL, PUBLIC, SAVE :: isslab_hamil
   !! is the input hamiltonian from slab calculation
-  LOGICAL, PUBLIC, SAVE :: isbulk_add_onsite
-  !! is the calculation with bulk hamiltonian with onsite terms on the surface
   INTEGER, PUBLIC, SAVE :: nbulk
   !! number of wannier basis for bulk principal layer
   INTEGER, PUBLIC, SAVE :: nsurf
@@ -33,10 +31,7 @@ MODULE parameters
   !! indices for hij
   INTEGER, PUBLIC, SAVE :: bulk_rz
   !! 1 or -1: append bulk layer along +z or -z direction
-
-  REAL(DP), ALLOCATABLE, PUBLIC, SAVE :: bulk_onsite_energy(:)
-  !! add onsite energy
-
+  !
   ! energy sampling
   INTEGER, PUBLIC, SAVE :: num_energy
   REAL(DP), PUBLIC, SAVE :: dos_e_min, dos_e_max, dos_e_step
@@ -45,7 +40,7 @@ MODULE parameters
   !! small imaginary number for green function
   LOGICAL, PUBLIC, SAVE :: isspin
   !! if true, read _spnr.dat file and calculate spin
-
+  !
   ! kpoint common
   LOGICAL, PUBLIC, SAVE :: kpoint_is_path
   !! true if path, false if grid
@@ -86,7 +81,6 @@ CONTAINS
     WRITE(*,'("isslab= ", L)') isslab
     WRITE(*,'("isslab_match= ", L)') isslab_match
     WRITE(*,'("isslab_hamil= ", L)') isslab_hamil
-    WRITE(*,'("isbulk_add_onsite= ", L)') isbulk_add_onsite
     WRITE(*,'("nsurf= ", I)') nsurf
     WRITE(*,'("nbulk= ", I)') nbulk
     WRITE(*,'("bulk_rz= ", I)') bulk_rz
@@ -124,17 +118,14 @@ CONTAINS
     CALL param_get_keyword('isslab',      found,l_value=isslab)
     CALL param_get_keyword('isslab_match',found,l_value=isslab_match)
     CALL param_get_keyword('isslab_hamil',found,l_value=isslab_hamil)
-    CALL param_get_keyword('isbulk_add_onsite',found,l_value=isbulk_add_onsite)
     CALL param_get_keyword('nsurf',       found,i_value=nsurf)
     CALL param_get_keyword('nbulk',       found,i_value=nbulk)
     CALL param_get_keyword('bulk_rz',     found,i_value=bulk_rz)
     !
     ! check validity of the input parameters
-    if (isslab .AND. .NOT.(isslab_hamil .or. isbulk_add_onsite .or. isslab_match)) &
-      CALL io_error('if isslab, isslab_hamil or isslab_match or isbulk_add_onsite must be .true.')
-    if (isbulk_add_onsite .AND. .NOT.(isslab)) &
-      CALL io_error('if isbulk_add_onsite, isslab must be .true.')
-    if (isslab .AND. (.NOT. isslab_match) .AND. (nsurf<=nbulk) .AND. .NOT.(isbulk_add_onsite)) &
+    if (isslab .AND. .NOT.(isslab_hamil .OR. isslab_match)) &
+      CALL io_error('if isslab, isslab_hamil or isslab_match must be .true.')
+    if (isslab .AND. (.NOT. isslab_match) .AND. (nsurf <= nbulk)) &
       CALL io_error('if isslab, nsurf must be GREATER THAN nbulk')
     ! if ((.NOT.isslab_hamil) .AND. (nsurf/=nbulk)) &
     !   CALL io_error('if NOT isslab_hamil, nsurf must be equal to nbulk')
@@ -234,19 +225,6 @@ CONTAINS
         END DO
       END DO
       plot_kpoint(3,:) = 0.0_dp
-    END IF
-
-    IF (isbulk_add_onsite) THEN
-      ! a ad-hoc patch for GeTe...
-      if (trim(seedname) .ne. 'gete.bulk') &
-        call io_error('Error: isbulk_add_onsite NOT IMPLEMENTED except for GeTe.bulk')
-      allocate(bulk_onsite_energy(nbulk))
-      bulk_onsite_energy(1:8) = 0.157589417
-      bulk_onsite_energy(9:16) = 0.152999
-      bulk_onsite_energy(17:24) = 0.204782292
-      bulk_onsite_energy(25:32) = 0.2090715
-      bulk_onsite_energy(33:40) = 0.180956042
-      bulk_onsite_energy(41:48) = 0.316390875
     END IF
   !------------------------------------------------------------------------
   END SUBROUTINE param_read

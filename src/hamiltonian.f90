@@ -113,15 +113,6 @@ SUBROUTINE hamiltonian_tb_to_k()
     h11 = htemp(ind_1, ind_1)
     h12 = htemp(ind_1, ind_2)
     DEALLOCATE(htemp)
-  ELSE IF (isbulk_add_onsite) THEN
-    CALL k_operator(nrpts0, hr0, rvec0, ndegen0, kx, ky, h11)
-    CALL k_operator(nrpts1, hr1, rvec1, ndegen1, kx, ky, h12)
-    h01 = h12
-    h00 = h11
-    do i = 1, nbulk
-      h00(i,i) = h00(i,i) + bulk_onsite_energy(i)
-    !     print*, i, bulk_onsite_energy(i)
-    ENDDO
   ELSE IF (isslab_match) THEN
     CALL k_operator(nrpts0, hr0, rvec0, ndegen0, kx, ky, h11)
     CALL k_operator(nrpts1, hr1, rvec1, ndegen1, kx, ky, h12)

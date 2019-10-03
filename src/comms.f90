@@ -142,4 +142,24 @@ CONTAINS
     ENDDO
   END SUBROUTINE k_operator
   !
+  !--------------------------------------------------------------------------
+  FUNCTION find_free_unit()
+  !! Taken from QE/UtilXlib/find_free_unit.f90
+  IMPLICIT NONE
+  !
+  INTEGER :: find_free_unit
+  INTEGER :: iunit
+  LOGICAL :: opnd
+  !
+  find_free_unit = -1
+  DO iunit = 99, 1, -1
+     INQUIRE( UNIT = iunit, OPENED = opnd )
+     IF ( .NOT. opnd ) THEN
+        find_free_unit = iunit
+        RETURN
+     END IF
+  ENDDO
+  CALL io_error('find_free_unit(): free unit not found ?!?')
+END FUNCTION find_free_unit
+
 END MODULE comms

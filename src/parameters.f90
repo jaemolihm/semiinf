@@ -7,74 +7,71 @@ MODULE parameters
   USE comms
   IMPLICIT NONE
   !
+  SAVE
+  !
   INTEGER, PARAMETER :: in_unit = 7
   INTEGER, PARAMETER :: maxlen = 256
 
-  REAL(DP), PUBLIC, SAVE :: hopping_tol
-  INTEGER, PUBLIC, SAVE :: MAX_N_ITER
-
-  LOGICAL, PUBLIC, SAVE :: isslab
-  !! is the calculation with surface reconstruction
-  LOGICAL, PUBLIC, SAVE :: isslab_match
-  !! is the calculation with surface + bulk matching
-  LOGICAL, PUBLIC, SAVE :: isslab_hamil
-  !! is the input hamiltonian from slab calculation
-  INTEGER, PUBLIC, SAVE :: nbulk
-  !! number of wannier basis for bulk principal layer
-  INTEGER, PUBLIC, SAVE :: nsurf
-  !! number of wannier basis for surface principal layer
-  INTEGER, ALLOCATABLE, PUBLIC, SAVE :: ind_0(:)
-  !! indices for hij
-  INTEGER, ALLOCATABLE, PUBLIC, SAVE :: ind_1(:)
-  !! indices for hij
-  INTEGER, ALLOCATABLE, PUBLIC, SAVE :: ind_2(:)
-  !! indices for hij
-  INTEGER, PUBLIC, SAVE :: bulk_rz
+  LOGICAL :: isslab
+  !! Is the calculation with surface reconstruction
+  LOGICAL :: isslab_match
+  !! Is the calculation with surface + bulk matching
+  LOGICAL :: isslab_hamil
+  !! Is the input hamiltonian from slab calculation
+  INTEGER :: nbulk
+  !! Number of wannier basis for bulk principal layer
+  INTEGER :: nsurf
+  !! Number of wannier basis for surface principal layer
+  INTEGER, ALLOCATABLE :: ind_0(:)
+  !! Indices for hij
+  INTEGER, ALLOCATABLE :: ind_1(:)
+  !! Indices for hij
+  INTEGER, ALLOCATABLE :: ind_2(:)
+  !! Indices for hij
+  INTEGER :: bulk_rz
   !! 1 or -1: append bulk layer along +z or -z direction
+  REAL(DP) :: hopping_tol
+  !! Convergence criterion of the iterative surface Green function calculation
+  INTEGER :: MAX_N_ITER
+  !! Maximum number of iterations for surface Green function
   !
-  ! energy sampling
-  INTEGER, PUBLIC, SAVE :: num_energy
-  REAL(DP), PUBLIC, SAVE :: dos_e_min, dos_e_max, dos_e_step
-  REAL(DP), ALLOCATABLE, PUBLIC, SAVE :: energy(:)
-  REAL(DP), PUBLIC, SAVE :: sigma
+  ! Variables related to energy sampling
+  INTEGER :: num_energy
+  REAL(DP) :: dos_e_min, dos_e_max, dos_e_step
+  REAL(DP), ALLOCATABLE :: energy(:)
+  REAL(DP) :: sigma
   !! small imaginary number for green function
-  LOGICAL, PUBLIC, SAVE :: isspin
+  LOGICAL :: isspin
   !! if true, read _spnr.dat file and calculate spin
   !
-  ! kpoint common
-  LOGICAL, PUBLIC, SAVE :: kpoint_is_path
-  !! true if path, false if grid
-  INTEGER, PUBLIC, SAVE :: num_kpoint
+  ! Variables related to kpoint
+  LOGICAL :: kpoint_is_path
+  !! true if k point is given by path, false if grid
+  INTEGER :: num_kpoint
   !! number of sampled k-points
-  REAL(DP), ALLOCATABLE, PUBLIC, SAVE :: plot_kpoint(:,:)
+  REAL(DP), ALLOCATABLE :: plot_kpoint(:,:)
   !! (3, num_kpoint) k points to calculate the spectral function
-  ! kpoint path
-  INTEGER, PUBLIC :: num_paths
-  INTEGER, PUBLIC :: bands_num_points
-  INTEGER, PUBLIC :: bands_num_spec_points
+  ! For kpoint path
+  INTEGER :: num_paths
+  INTEGER :: bands_num_points
+  INTEGER :: bands_num_spec_points
   CHARACTER(LEN=1), ALLOCATABLE ::bands_label(:)
   REAL(DP), ALLOCATABLE :: bands_spec_points(:,:)
-  !! kpoint grid
+  ! For kpoint path case
   INTEGER :: kpoint_grid_num(2)
-
-  CHARACTER(LEN=maxlen), SAVE :: seedname
-  CHARACTER(LEN=maxlen), SAVE :: input_filename
-
-!  ! artificial, surface local e field
-!  REAL(DP), PUBLIC :: efield_amp
-!  REAL(DP), PUBLIC :: zcenter
-
+  !
+  CHARACTER(LEN=256) :: seedname
+  CHARACTER(LEN=256) :: input_filename
+  !
   ! values NOT determined from input
-  LOGICAL, PUBLIC, SAVE :: flag_converged
-  INTEGER, PUBLIC, SAVE :: n_iter
-
-  ! private
-  INTEGER :: num_lines
-  INTEGER :: itemp1, itemp2
-  CHARACTER(LEN=maxlen), ALLOCATABLE :: in_data(:)
-  CHARACTER(LEN=maxlen) :: buffer
-
-
+  LOGICAL :: flag_converged
+  INTEGER :: n_iter
+  !
+  ! private variables
+  INTEGER, PRIVATE :: num_lines
+  INTEGER, PRIVATE :: itemp1, itemp2
+  CHARACTER(LEN=256), ALLOCATABLE, PRIVATE :: in_data(:)
+  CHARACTER(LEN=256), PRIVATE :: buffer
 CONTAINS
   !------------------------------------------------------------------------
   SUBROUTINE param_write

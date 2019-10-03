@@ -1,8 +1,10 @@
 !------------------------------------------------------------------------
+!! Adapted by Jae-Mo Lihm from wannier90/src/parameters.F90
+!------------------------------------------------------------------------
 MODULE parameters
 !------------------------------------------------------------------------
-!! This module contains parameters to control the actions of wannier90.
-!! Also routines to read the parameters and write them out again.
+!! This module contains parameters to control the actions of semiinf.x.
+!! Also have routines to read the parameters and write them out again.
 !------------------------------------------------------------------------
   USE comms
   IMPLICIT NONE
@@ -11,20 +13,20 @@ MODULE parameters
   !
   INTEGER, PARAMETER :: maxlen = 256
   !
+  ! --------------------- input variables ---------------------
   LOGICAL :: isslab
-  !! Is the calculation with surface reconstruction. If .false., all principal
+  !! Is the calculation with surface modification. If .false., all principal
   !! layers, including the surface principal layer, are identical.
   LOGICAL :: hr_from_bulk_and_slab
   !! Is the calculation with surface (slab) and bulk matching.
   !! If .true., read seedname.bulk_hr.dat and seedname.slab_hr.dat file
   !! If .false., read seedname_hr.dat file only, and set surface and bulk
   !! regions using ind_0, ind_1, ind_2.
-  ! LOGICAL :: isslab_hamil
-  ! Is the input hamiltonian from slab calculation (read seedname only)
   INTEGER :: nbulk
-  !! Number of wannier basis for bulk principal layer
+  !! Number of basis functions for the bulk principal layer
   INTEGER :: nsurf
-  !! Number of wannier basis for surface principal layer
+  !! Number of basis functions for the surface principal layer
+  !! If .not. isslab, automatically set to nbulk.
   INTEGER, ALLOCATABLE :: ind_0(:)
   !! Indices for hij
   INTEGER, ALLOCATABLE :: ind_1(:)
@@ -39,36 +41,47 @@ MODULE parameters
   !! Maximum number of iterations for surface Green function
   !
   ! Variables related to energy sampling
-  INTEGER :: num_energy
   REAL(DP) :: dos_e_min
+  !! Minimum energy to calculate DOS. (in eV)
   REAL(DP) :: dos_e_max
+  !! Maximum energy to calculate DOS. (in eV)
   REAL(DP) :: dos_e_step
-  REAL(DP), ALLOCATABLE :: energy(:)
+  !! Step size of energy sampling. (in eV)
   REAL(DP) :: sigma
   !! Small imaginary number for green function
   LOGICAL :: isspin
-  !! If true, read _spnr.dat file and calculate spin
+  !! If true, read _spnr.dat file and calculate spin-DOS
   !
   ! Variables related to kpoint
   LOGICAL :: kpoint_is_path
-  !! true if k point is given by path, false if grid
+  !! true if k point is given by path, false if given by grid.
   INTEGER :: num_kpoint
   !! number of sampled k-points
   REAL(DP), ALLOCATABLE :: plot_kpoint(:,:)
   !! (3, num_kpoint) k points to calculate the spectral function
-  ! For kpoint path
+  !
+  ! Variables for kpoint path
   INTEGER :: num_paths
   INTEGER :: bands_num_points
   INTEGER :: bands_num_spec_points
   CHARACTER(LEN=1), ALLOCATABLE :: bands_label(:)
   REAL(DP), ALLOCATABLE :: bands_spec_points(:,:)
-  ! For kpoint path case
+  ! Variables for kpoint grid
   INTEGER :: kpoint_grid_num(2)
   !
   CHARACTER(LEN=256) :: seedname
   CHARACTER(LEN=256) :: input_filename
   !
-  ! values NOT determined from input
+  ! --------------------- derived variables ---------------------
+  ! These variables are not directly read, but derived from the input variables
+  INTEGER :: num_energy
+  !! Number of energy values to calculate DOS
+  REAL(DP), ALLOCATABLE :: energy(:)
+  !! (num_energy) List of energy values to calculate DOS (in eV)
+  !
+  ! --------------------- other variables ---------------------
+  ! These variables are not set during the input step.
+  ! FIXME: move these to elsewhere?
   LOGICAL :: flag_converged
   INTEGER :: n_iter
   !
@@ -103,30 +116,27 @@ SUBROUTINE param_read
   CALL param_in_file
   !
   CALL param_get_keyword('seedname',found,c_value=seedname)
-
-!    call param_get_keyword('efield_amp',found,r_value=efield_amp)
-!    call param_get_keyword('zcenter',found,r_value=zcenter)
-
-  ! default values
+  !
+  ! Set default values
   hopping_tol = 1.D-8
   max_n_iter = 40
   isspin = .false.
   bulk_rz = 1
   ! read parameters
-  CALL param_get_keyword('hopping_tol',  found, r_value=hopping_tol)
-  CALL param_get_keyword('max_n_iter',   found, i_value=max_n_iter)
-  CALL param_get_keyword('isspin',       found, l_value=isspin)
-  CALL param_get_keyword('isslab',       found, l_value=isslab)
+  CALL param_get_keyword('hopping_tol', found, r_value=hopping_tol)
+  CALL param_get_keyword('max_n_iter', found, i_value=max_n_iter)
+  CALL param_get_keyword('isspin', found, l_value=isspin)
+  CALL param_get_keyword('isslab', found, l_value=isslab)
   CALL param_get_keyword('hr_from_bulk_and_slab', found, l_value=hr_from_bulk_and_slab)
   if (isslab .AND. .NOT. found) &
     CALL io_error('If isslab, hr_from_bulk_and_slab must be set.')
-  CALL param_get_keyword('nsurf',        found, i_value=nsurf)
-  CALL param_get_keyword('nbulk',        found, i_value=nbulk)
-  CALL param_get_keyword('bulk_rz',      found, i_value=bulk_rz)
+  CALL param_get_keyword('nsurf', found, i_value=nsurf)
+  CALL param_get_keyword('nbulk', found, i_value=nbulk)
+  CALL param_get_keyword('bulk_rz', found, i_value=bulk_rz)
   !
-  ! Check validity of the input parameters
+  ! Check validity of input parameters
   if (isslab .AND. (.NOT. hr_from_bulk_and_slab) .AND. (nsurf <= nbulk)) &
-    CALL io_error('if isslab and not hr_from_bulk_and_slab, nsurf must be greater than nbulk')
+    CALL io_error('ERROR: if isslab and not hr_from_bulk_and_slab, nsurf must be greater than nbulk')
   !
   IF (isslab) THEN
     ALLOCATE(ind_0(nsurf))

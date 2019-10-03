@@ -59,14 +59,14 @@ SUBROUTINE hamiltonian_setup()
   IF (ierr /= 0) CALL io_error('Error in allocation in hamiltonian_setup')
   !
   ! reading seedname_hr.dat
-  IF (isslab_hamil) THEN
+  IF (isslab .AND. .NOT. hr_from_bulk_and_slab) THEN
     CALL read_hamiltonian(0, hr0, rvec0, ndegen0, nrpts0, TRIM(seedname))
-  ELSE IF (isslab_match) THEN
+  ELSE IF (isslab .AND. hr_from_bulk_and_slab) THEN
     CALL read_hamiltonian(0, hr0, rvec0, ndegen0, nrpts0, TRIM(seedname)//".bulk")
     CALL read_hamiltonian(bulk_rz, hr1, rvec1, ndegen1, nrpts1, TRIM(seedname)//".bulk")
     CALL read_hamiltonian(0, hr0s, rvec0s, ndegen0s, nrpts0s, TRIM(seedname)//".slab")
-    seedname = TRIM(seedname)//".slab"
-
+    seedname = TRIM(seedname) // ".slab"
+    !
     ! calculate the required onsite energy shift
     ! bulk_shift = average(hr0s_onsite - hr0_onsite)
     bulk_shift = 0.0_dp
@@ -87,7 +87,7 @@ SUBROUTINE hamiltonian_setup()
     bulk_shift = CMPLX(REAL(bulk_shift / nbulk, DP), 0.0_dp, DP)
     IF (is_root) WRITE(*,*) "bulk_shift = ", bulk_shift
     IF (is_root) WRITE(*,*) "Note: this may(should) be small if util_match is used to generate slab hr.dat file"
-  ELSE
+  ELSE ! .NOT. isslab
     CALL read_hamiltonian(0, hr0, rvec0, ndegen0, nrpts0, TRIM(seedname))
     CALL read_hamiltonian(1, hr1, rvec1, ndegen1, nrpts1, TRIM(seedname))
   ENDIF
@@ -105,28 +105,30 @@ SUBROUTINE hamiltonian_tb_to_k()
   COMPLEX(DP), ALLOCATABLE :: htemp(:,:)
   INTEGER :: i
   !
-  IF (isslab_hamil) THEN
-    ALLOCATE(htemp(num_hr_wann,num_hr_wann))
-    CALL k_operator(nrpts0, hr0, rvec0, ndegen0, kx, ky, htemp)
-    IF (isslab) h00 = htemp(ind_0, ind_0)
-    IF (isslab) h01 = htemp(ind_0, ind_1)
-    h11 = htemp(ind_1, ind_1)
-    h12 = htemp(ind_1, ind_2)
-    DEALLOCATE(htemp)
-  ELSE IF (isslab_match) THEN
-    CALL k_operator(nrpts0, hr0, rvec0, ndegen0, kx, ky, h11)
-    CALL k_operator(nrpts1, hr1, rvec1, ndegen1, kx, ky, h12)
-    ALLOCATE(htemp(num_hr_wann,num_hr_wann))
-    CALL k_operator(nrpts0s, hr0s, rvec0s, ndegen0s, kx, ky, htemp)
-    h00 = htemp(ind_0, ind_0)
-    h01 = htemp(ind_0, ind_1)
-    ! shift diagonal elements of bulk hamiltonian using bulk_shift
-    ! to match bulk and slab energy reference
-    DO i=1,nsurf
-      h00(i,i) = h00(i,i) - bulk_shift
-    ENDDO
-    DEALLOCATE(htemp)
-  ELSE !.NOT. isslab, .NOT. isslab_hamil, .NOT. isslab_match
+  IF (isslab) THEN
+    IF (.NOT. hr_from_bulk_and_slab) THEN
+      ALLOCATE(htemp(num_hr_wann,num_hr_wann))
+      CALL k_operator(nrpts0, hr0, rvec0, ndegen0, kx, ky, htemp)
+      IF (isslab) h00 = htemp(ind_0, ind_0)
+      IF (isslab) h01 = htemp(ind_0, ind_1)
+      h11 = htemp(ind_1, ind_1)
+      h12 = htemp(ind_1, ind_2)
+      DEALLOCATE(htemp)
+    ELSE ! isslab and hr_from_bulk_and_slab
+      CALL k_operator(nrpts0, hr0, rvec0, ndegen0, kx, ky, h11)
+      CALL k_operator(nrpts1, hr1, rvec1, ndegen1, kx, ky, h12)
+      ALLOCATE(htemp(num_hr_wann,num_hr_wann))
+      CALL k_operator(nrpts0s, hr0s, rvec0s, ndegen0s, kx, ky, htemp)
+      h00 = htemp(ind_0, ind_0)
+      h01 = htemp(ind_0, ind_1)
+      ! shift diagonal elements of bulk hamiltonian using bulk_shift
+      ! to match bulk and slab energy reference
+      DO i=1,nsurf
+        h00(i,i) = h00(i,i) - bulk_shift
+      ENDDO
+      DEALLOCATE(htemp)
+    ENDIF ! hr_from_bulk_and_slab
+  ELSE !.NOT. isslab
     CALL k_operator(nrpts0, hr0, rvec0, ndegen0, kx, ky, h11)
     CALL k_operator(nrpts1, hr1, rvec1, ndegen1, kx, ky, h12)
   ENDIF

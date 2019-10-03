@@ -30,7 +30,7 @@ SUBROUTINE iter_slab_main()
 !------------------------------------------------------------------------
   CALL iter_slab_initialize()
   ! ... iterate semi-infinite slab
-  DO n_iter = 1, MAX_N_ITER
+  DO n_iter = 1, max_n_iter
     CALL iter_slab_update()
     CALL iter_slab_check_convergence()
     IF (flag_converged) EXIT

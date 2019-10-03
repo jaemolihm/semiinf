@@ -27,7 +27,7 @@ SUBROUTINE iter_bulk_main()
 !------------------------------------------------------------------------
   CALL iter_bulk_initialize()
   ! ... iterate semi-infinite slab
-  DO n_iter = 1, MAX_N_ITER
+  DO n_iter = 1, max_n_iter
     CALL iter_bulk_update()
     CALL iter_bulk_check_convergence()
     IF (flag_converged) EXIT

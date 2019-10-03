@@ -1,5 +1,5 @@
 !------------------------------------------------------------------------
-module iter_bulk
+MODULE iter_bulk
 !------------------------------------------------------------------------
 !! Driver of iteration for the bulk-only case (no surface modification)
 !------------------------------------------------------------------------
@@ -39,9 +39,7 @@ END SUBROUTINE iter_bulk_main
 !
 !------------------------------------------------------------------------
 SUBROUTINE iter_bulk_initialize()
-!------------------------------------------------------------------------
 !! initialize iteration paramters
-!------------------------------------------------------------------------
   IMPLICIT NONE
   e_s = h11
   e_b = h11
@@ -63,8 +61,8 @@ SUBROUTINE iter_bulk_check_convergence()
   flag_converged = .false.
   DO j = 1, nbulk
     DO i = 1, nbulk
-      conver1 = conver1 + SQRT(REAL(a_b(i,j),dp)**2+AIMAG(a_b(i,j))**2)
-      conver2 = conver2 + SQRT(REAL(b_b(i,j),dp)**2+AIMAG(b_b(i,j))**2)
+      conver1 = conver1 + SQRT(REAL(a_b(i,j), DP)**2 + AIMAG(a_b(i,j))**2)
+      conver2 = conver2 + SQRT(REAL(b_b(i,j), DP)**2 + AIMAG(b_b(i,j))**2)
     END DO
   END DO
   IF (conver1 < hopping_tol .AND. conver2 < hopping_tol) THEN
@@ -107,9 +105,7 @@ END SUBROUTINE iter_bulk_update
 !
 !------------------------------------------------------------------------
 SUBROUTINE iter_bulk_green()
-!------------------------------------------------------------------------
 !! Calculate Green function after iteration
-!------------------------------------------------------------------------
   IMPLICIT NONE
   CALL inv_omega_minus_mat(nbulk, e_s, omega, green_s, 'iter_bulk_green for green_s')
   CALL inv_omega_minus_mat(nbulk, e_b, omega, green_b, 'iter_bulk_green for green_b')
@@ -119,9 +115,7 @@ END SUBROUTINE
 !
 !------------------------------------------------------------------------
 SUBROUTINE iter_bulk_allocate()
-!------------------------------------------------------------------------
 !! Allocate matrices used during the iteration
-!------------------------------------------------------------------------
   IMPLICIT NONE
   INTEGER :: ierr
   ALLOCATE(a_b(nbulk, nbulk), stat=ierr)
@@ -140,9 +134,7 @@ END SUBROUTINE
 !
 !------------------------------------------------------------------------
 SUBROUTINE iter_bulk_deallocate()
-!------------------------------------------------------------------------
 !! Deallocate matrices when the iteration is done
-!------------------------------------------------------------------------
   IMPLICIT NONE
   INTEGER :: ierr
   DEALLOCATE(a_b, stat=ierr)

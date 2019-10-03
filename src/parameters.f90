@@ -59,19 +59,6 @@ MODULE parameters
   ! Variables related to kpoint
   LOGICAL :: kpoint_is_path
   !! true if k point is given by path, false if given by grid.
-  INTEGER :: num_kpoint
-  !! number of sampled k-points
-  REAL(DP), ALLOCATABLE :: plot_kpoint(:,:)
-  !! (3, num_kpoint) k points to calculate the spectral function
-  !
-  ! Variables for kpoint path
-  INTEGER :: num_paths
-  INTEGER :: bands_num_points
-  INTEGER :: bands_num_spec_points
-  CHARACTER(LEN=1), ALLOCATABLE :: bands_label(:)
-  REAL(DP), ALLOCATABLE :: bands_spec_points(:,:)
-  ! Variables for kpoint grid
-  INTEGER :: kpoint_grid_num(2)
   !
   CHARACTER(LEN=256) :: seedname
   CHARACTER(LEN=256) :: input_filename
@@ -82,6 +69,10 @@ MODULE parameters
   !! Number of energy values to calculate DOS
   REAL(DP), ALLOCATABLE :: energy(:)
   !! (num_energy) List of energy values to calculate DOS (in eV)
+  INTEGER :: num_kpoint
+  !! number of sampled k-points
+  REAL(DP), ALLOCATABLE :: plot_kpoint(:,:)
+  !! (3, num_kpoint) k points to calculate the spectral function
   !
   ! --------------------- other variables ---------------------
   ! These variables are not set during the input step.
@@ -89,7 +80,16 @@ MODULE parameters
   LOGICAL :: flag_converged
   INTEGER :: n_iter
   !
-  ! private variables
+  ! --------------------- private variables ---------------------
+  ! For reading kpoint path
+  INTEGER, PRIVATE :: num_paths
+  CHARACTER(LEN=1), ALLOCATABLE, PRIVATE :: bands_label(:)
+  INTEGER, PRIVATE :: bands_num_points
+  INTEGER, PRIVATE :: bands_num_spec_points
+  REAL(DP), ALLOCATABLE, PRIVATE :: bands_spec_points(:,:)
+  ! For reading kpoint grid
+  INTEGER, PRIVATE :: kpoint_grid_num(2)
+  ! Others
   INTEGER, PRIVATE :: num_lines
   INTEGER, PRIVATE :: itemp1, itemp2
   CHARACTER(LEN=256), ALLOCATABLE, PRIVATE :: in_data(:)
@@ -113,7 +113,7 @@ SUBROUTINE param_read
   IMPLICIT NONE
   LOGICAL :: found
   INTEGER :: ierr, i_temp, loop_spts, loop_i, loop_j, counter
-  REAL(DP) :: vec(3)
+  REAL(DP) :: vec(2)
   REAL(DP), ALLOCATABLE :: xval(:), kpath_len(:)
   INTEGER, ALLOCATABLE :: kpath_pts(:)
   !
@@ -158,9 +158,9 @@ SUBROUTINE param_read
   ENDIF
   !
   ! energy
-  CALL param_get_keyword('sigma',  found, r_value=sigma)
-  CALL param_get_keyword('e_min',  found, r_value=dos_e_min)
-  CALL param_get_keyword('e_max',  found, r_value=dos_e_max)
+  CALL param_get_keyword('sigma', found, r_value=sigma)
+  CALL param_get_keyword('e_min', found, r_value=dos_e_min)
+  CALL param_get_keyword('e_max', found, r_value=dos_e_max)
   CALL param_get_keyword('e_step', found, r_value=dos_e_step)
   num_energy = NINT((dos_e_max - dos_e_min) / dos_e_step)
   dos_e_step = (dos_e_max - dos_e_min) / (num_energy-1)
@@ -176,23 +176,23 @@ SUBROUTINE param_read
   ELSE IF (buffer == 'grid') THEN
     kpoint_is_path = .FALSE.
   ELSE
-    CALL io_error('kpoint_type is path or grid')
+    CALL io_error('kpoint_type must be path or grid')
   ENDIF
   !
   ! set kpoints path
   IF (kpoint_is_path) THEN
     bands_num_spec_points=0
-    CALL param_get_block_length('kpoint_path',found,i_temp)
+    CALL param_get_block_length('kpoint_path', found, i_temp)
     IF (found) THEN
       bands_num_spec_points = i_temp * 2
-      ALLOCATE(bands_label(bands_num_spec_points),stat=ierr)
+      ALLOCATE(bands_label(bands_num_spec_points), stat=ierr)
       IF (ierr/=0) CALL io_error('Error allocating bands_label in param_read')
-      ALLOCATE(bands_spec_points(3,bands_num_spec_points),stat=ierr)
+      ALLOCATE(bands_spec_points(2,bands_num_spec_points),stat=ierr)
       IF (ierr/=0) CALL io_error('Error allocating bands_spec_points in param_read')
       CALL param_get_keyword_kpath
     ENDIF
     CALL param_get_keyword('bands_num_points',found,i_value=bands_num_points)
-
+    !
     num_paths = bands_num_spec_points / 2
     ALLOCATE(kpath_len(num_paths))
     ALLOCATE(kpath_pts(num_paths))
@@ -209,7 +209,7 @@ SUBROUTINE param_read
     ENDDO
     num_kpoint = SUM(kpath_pts)+1
 
-    ALLOCATE(plot_kpoint(3,num_kpoint), stat=ierr)
+    ALLOCATE(plot_kpoint(2,num_kpoint), stat=ierr)
     ALLOCATE(xval(num_kpoint), stat=ierr)
 
     counter=0
@@ -233,7 +233,7 @@ SUBROUTINE param_read
     CALL param_get_keyword('grid_1',found,i_value=kpoint_grid_num(1))
     CALL param_get_keyword('grid_2',found,i_value=kpoint_grid_num(2))
     num_kpoint = kpoint_grid_num(1) * kpoint_grid_num(2)
-    ALLOCATE(plot_kpoint(3,num_kpoint), stat=ierr)
+    ALLOCATE(plot_kpoint(2,num_kpoint), stat=ierr)
     DO loop_j = 1, kpoint_grid_num(2)
       DO loop_i = 1, kpoint_grid_num(1)
         plot_kpoint(1,(loop_j-1)*kpoint_grid_num(1)+loop_i) = &
@@ -242,7 +242,6 @@ SUBROUTINE param_read
             MOD(REAL(loop_j,dp) / REAL(kpoint_grid_num(2),dp) + 0.5_dp, 1.0_dp) - 0.5_dp
       END DO
     END DO
-    plot_kpoint(3,:) = 0.0_dp
   END IF
 !------------------------------------------------------------------------
 END SUBROUTINE param_read
@@ -303,8 +302,8 @@ SUBROUTINE param_get_keyword_kpath
   do loop=line_s+1,line_e-1
     counter=counter+2
     dummy=in_data(loop)
-    read(dummy,*,err=240,end=240) bands_label(counter-1),(bands_spec_points(i,counter-1),i=1,3)&
-         ,bands_label(counter),(bands_spec_points(i,counter),i=1,3)
+    read(dummy,*,err=240,end=240) bands_label(counter-1),(bands_spec_points(i,counter-1),i=1,2)&
+         ,bands_label(counter),(bands_spec_points(i,counter),i=1,2)
   end do
 
   in_data(line_s:line_e)(1:maxlen) = ' '

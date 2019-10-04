@@ -123,7 +123,7 @@ SUBROUTINE param_read
 !------------------------------------------------------------------------
   IMPLICIT NONE
   LOGICAL :: found
-  INTEGER :: ierr, i_temp, loop_spts, loop_i, loop_j, counter, ik
+  INTEGER :: ierr, i_temp, loop_spts, loop_i, loop_j, counter, ik, nlen_temp
   REAL(DP) :: vec(2)
   REAL(DP), ALLOCATABLE :: xval(:), kpath_len(:)
   INTEGER, ALLOCATABLE :: kpath_pts(:)
@@ -158,14 +158,24 @@ SUBROUTINE param_read
   ENDIF
   !
   IF (isslab) THEN
+    CALL param_get_range_vector('ind_0', found, nlen_temp, .TRUE.)
+    IF (nlen_temp /= nsurf) &
+      CALL io_error('ERROR: length of ind_0 must be equal to nsurf')
     ALLOCATE(ind_0(nsurf))
-    CALL param_get_range_vector('ind_0',found,nsurf,.false.,ind_0)
+    CALL param_get_range_vector('ind_0', found, nsurf,.FALSE., ind_0)
+    !
+    CALL param_get_range_vector('ind_1', found, nlen_temp, .TRUE.)
+    IF (nlen_temp /= nbulk) &
+      CALL io_error('ERROR: length of ind_1 must be equal to nbulk')
     ALLOCATE(ind_1(nbulk))
-    CALL param_get_range_vector('ind_1',found,nbulk,.false.,ind_1)
+    CALL param_get_range_vector('ind_1', found, nbulk, .FALSE., ind_1)
   ENDIF
   IF (isslab .and. .not. hr_stitching) THEN
+    CALL param_get_range_vector('ind_2', found, nlen_temp, .TRUE.)
+    IF (nlen_temp /= nbulk) &
+      CALL io_error('ERROR: length of ind_2 must be equal to nbulk')
     ALLOCATE(ind_2(nbulk))
-    CALL param_get_range_vector('ind_2',found,nbulk,.false.,ind_2)
+    CALL param_get_range_vector('ind_2', found, nbulk, .FALSE., ind_2)
   ENDIF
   !
   ! energy

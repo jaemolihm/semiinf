@@ -18,8 +18,7 @@ module iter_slab
     b_b_prev(:,:), a_s_prev(:,:), b_s_prev(:,:), temp_mat(:,:), &
     temp_mat_sb(:,:)
   INTEGER, ALLOCATABLE :: ipiv_s(:), ipiv_b(:)
-  PUBLIC :: iter_slab_main, iter_slab_allocate, iter_slab_deallocate, &
-    iter_slab_green_finite
+  PUBLIC :: iter_slab_main, iter_slab_allocate, iter_slab_deallocate
 CONTAINS
 !------------------------------------------------------------------------
 SUBROUTINE iter_slab_main(flag_converged)
@@ -158,15 +157,6 @@ SUBROUTINE iter_slab_green()
   CALL inv_omega_minus_mat(nbulk, e_s1, omega, green_s1, 'iter_slab_green for green_s1')
   CALL inv_omega_minus_mat(nbulk, e_b, omega, green_b, 'iter_slab_green for green_b')
 END SUBROUTINE iter_slab_green
-!------------------------------------------------------------------------
-!
-!------------------------------------------------------------------------
-SUBROUTINE iter_slab_green_finite()
-!! Calculate Green function of a finite slab by direct inversion
-  USE comms, ONLY : inv_omega_minus_mat
-  IMPLICIT NONE
-  CALL inv_omega_minus_mat(nsurf, h00, omega, green_s, 'iter_slab_green for green_s')
-END SUBROUTINE iter_slab_green_finite
 !------------------------------------------------------------------------
 !
 !------------------------------------------------------------------------

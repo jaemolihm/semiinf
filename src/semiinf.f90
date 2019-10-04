@@ -3,11 +3,14 @@ PROGRAM semiinf
 !------------------------------------------------------------------------
 !! Main driver of the semiinf.x program
 !------------------------------------------------------------------------
-  USE comms
-  USE parameters
-  USE iter_bulk
-  USE iter_slab
-  USE postprocess_green
+  USE comms, ONLY : DP, is_root, mp_setup, mp_barrier, mp_end, world_comm, &
+    io_error, ci, cone, find_free_unit
+  USE parameters, ONLY : nbulk, isspin, isslab, sigma, num_energy, energy, &
+    input_filename, param_read, param_write
+  USE iter_bulk, ONLY : iter_bulk_allocate
+  USE iter_slab, ONLY : iter_slab_allocate
+  USE hamiltonian, ONLY : hamiltonian_setup
+  USE postprocess_green, ONLY : pp_green_setup
   !
   IMPLICIT NONE
   !
@@ -94,11 +97,18 @@ SUBROUTINE distribute_kpoint()
 !------------------------------------------------------------------------
 !! distribute k points to processors for k-point parallelization
 !------------------------------------------------------------------------
+  USE comms, ONLY : num_procs, my_id, is_root
+  USE parameters, ONLY : num_kpoint
+  IMPLICIT NONE
+  !
   INTEGER :: q, r
   ! nk = q * (np-r) + (q+1) * r
   q = num_kpoint / num_procs
   r = num_kpoint - (num_procs * q)
-  WRITE(*, "(X,'There are', I8,' or ',I8,' k-points per processor')") q, q+1
+  IF (is_root) THEN
+    WRITE(*, "(X,'There are', I8,' or ',I8,' k-points per processor')") q, q+1
+  ENDIF
+  !
   IF (my_id < (num_procs - r)) THEN
     ik_end = q * (my_id + 1)
     ik_start = ik_end - q + 1
@@ -118,7 +128,13 @@ SUBROUTINE run_kpoint(ik)
 !! Main driver of the calculation for each k point.
 !! For given kx and ky, calculate Green function and write DOS to file
 !------------------------------------------------------------------------
-  USE hamiltonian, ONLY : omega, kx, ky
+  USE parameters, ONLY : plot_kpoint
+  USE hamiltonian, ONLY : omega, kx, ky, hamiltonian_tb_to_k
+  USE iter_bulk, ONLY : iter_bulk_main
+  USE iter_slab, ONLY : iter_slab_main
+  USE postprocess_green, ONLY : get_dos_s, get_dos_b, get_dos_nlayer, &
+    set_transfer_mat, get_spin_s, pp_green_deallocate_green_layer
+  !
   IMPLICIT NONE
   INTEGER, INTENT(IN) :: ik
   !! Index of the k point to be calculated

@@ -3,21 +3,23 @@ MODULE postprocess_green
 !------------------------------------------------------------------------
 !! Driver of postprocessing the Green function to calculate dos and spin-dos
 !------------------------------------------------------------------------
-  USE comms
-  USE parameters
-  USE hamiltonian
+  USE comms, ONLY : DP, io_error, is_root, cone, czero, pi
+  USE parameters, ONLY : seedname, isslab, isspin, nbulk, nsurf, green_s, &
+    green_s1, green_b
+  USE hamiltonian, ONLY : kx, ky, omega, h01, h11, h12
   !
   IMPLICIT NONE
+  PRIVATE
   SAVE
   !
-  COMPLEX(DP), ALLOCATABLE :: green_s(:,:), green_s1(:,:), green_b(:,:), &
-    t_mat(:,:), s_mat(:,:), teff_mat(:,:), seff_mat(:,:)
+  COMPLEX(DP), ALLOCATABLE :: t_mat(:,:), s_mat(:,:), teff_mat(:,:), seff_mat(:,:)
   COMPLEX(DP), ALLOCATABLE :: green_layer(:,:,:)
   COMPLEX(DP), ALLOCATABLE :: spnr(:,:,:,:)
   REAL(DP), ALLOCATABLE :: srvec(:,:), sndegen(:)
   INTEGER :: snrpts
   !
-  ! PUBLIC :: get_dos_s, get_dos_b, pp_green_allocate, pp_green_deallocate
+  PUBLIC :: get_dos_s, get_dos_b, get_dos_nlayer, set_transfer_mat, &
+    get_spin_s, pp_green_deallocate_green_layer, pp_green_setup
 CONTAINS
 !------------------------------------------------------------------------
 SUBROUTINE get_dos_s(dos_out)
@@ -138,10 +140,11 @@ END SUBROUTINE get_dos_b
 !------------------------------------------------------------------------
 SUBROUTINE get_dos_nlayer(nlayer, dos_out)
 !! Calculate Green function and DOS for sub-surface layers
+  IMPLICIT NONE
   INTEGER, INTENT(IN) :: nlayer
   REAL(DP), INTENT(OUT) :: dos_out(nlayer)
   !
-  INTEGER :: i, il, j, cnt
+  INTEGER :: i, il
   !
   IF (nlayer .lt. 1) RETURN
   !
@@ -165,7 +168,9 @@ END SUBROUTINE get_dos_nlayer
 !
 !------------------------------------------------------------------------
 SUBROUTINE get_spin_s(spin_out)
+  USE comms, ONLY : k_operator
   IMPLICIT NONE
+  !
   REAL(DP), INTENT(OUT) :: spin_out(3)
   COMPLEX(DP), ALLOCATABLE :: spnk(:,:)
   INTEGER :: i, j, ispin
@@ -273,6 +278,9 @@ END SUBROUTINE pp_green_deallocate_green_layer
 !
 !------------------------------------------------------------------------
 SUBROUTINE set_transfer_mat()
+  USE comms, ONLY : inv_omega_minus_mat
+  IMPLICIT NONE
+  !
   COMPLEX(DP), ALLOCATABLE :: temp_mat(:,:)
   IF (isslab) THEN
     ! t_mat = green_s1 * h12^dagger

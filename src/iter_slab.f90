@@ -4,9 +4,8 @@ module iter_slab
 !! Driver of iteration for the bulk-only case (no surface modification)
 !------------------------------------------------------------------------
   USE comms, ONLY : DP, io_error, cone, czero
-  USE parameters, ONLY : nbulk, nsurf
+  USE parameters, ONLY : nbulk, nsurf, green_s, green_s1, green_b
   USE hamiltonian, ONLY : h00, h01, h11, h12, omega
-  USE postprocess_green, ONLY : green_s, green_s1, green_b
   !
   IMPLICIT NONE
   SAVE
@@ -18,6 +17,7 @@ module iter_slab
     b_b_prev(:,:), a_s_prev(:,:), b_s_prev(:,:), temp_mat(:,:), &
     temp_mat_sb(:,:)
   INTEGER, ALLOCATABLE :: ipiv_s(:), ipiv_b(:)
+  !
   PUBLIC :: iter_slab_main, iter_slab_allocate, iter_slab_deallocate
 CONTAINS
 !------------------------------------------------------------------------

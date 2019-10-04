@@ -4,9 +4,8 @@ MODULE iter_bulk
 !! Driver of iteration for the bulk-only case (no surface modification)
 !------------------------------------------------------------------------
   USE comms, ONLY : DP, io_error, cone, czero
-  USE parameters, ONLY : nbulk
+  USE parameters, ONLY : nbulk, green_s, green_b
   USE hamiltonian, ONLY : h11, h12, omega
-  USE postprocess_green, ONLY : green_s, green_b
   !
   IMPLICIT NONE
   SAVE

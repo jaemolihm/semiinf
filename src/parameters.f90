@@ -87,9 +87,14 @@ MODULE parameters
   !
   ! --------------------- other variables ---------------------
   ! These variables are not set during the input step.
-  ! FIXME: move these to elsewhere?
   CHARACTER(LEN=256) :: input_filename
   !! name of the input file. Read as inline argument.
+  COMPLEX(DP), ALLOCATABLE :: green_s(:,:)
+  !! Green function for the surface principal layer
+  COMPLEX(DP), ALLOCATABLE :: green_s1(:,:)
+  !! Green function for the first sub-surface principal layer
+  COMPLEX(DP), ALLOCATABLE :: green_b(:,:)
+  !! Green function for a bulk principal layer
   !
   ! --------------------- private variables ---------------------
   ! For reading kpoint path

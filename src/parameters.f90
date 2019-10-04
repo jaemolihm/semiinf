@@ -64,11 +64,17 @@ MODULE parameters
   !
   ! Variables related to kpoint
   CHARACTER(4) :: kpoint_type
-  !! The way k point is given. 'path' or 'grid' only.
-  !! path: the kpoints are determined using the wannier90 kpoint path algorithm
+  !! The way k point is given. 'file' or 'grid' only.
+  !! file: the kpoints are read from file.
   !! grid: the kpoints are chosen as a grid in the 2d BZ
-  !! TODO: enable the choice of the region to make the kpoint grid
-  !! TODO: implement kpoint_type == 'file'
+  CHARACTER(LEN=256) :: kpoint_file
+  !! Filename where the k points are written.
+  !! Used only if kpoint_type is file.
+  !! The file content must be like
+  !! num_kpoint
+  !! kpoints(1, 1)  kpoints(2, 1)
+  !! ...
+  !! kpoints(1, num_kpoint)  kpoints(2, num_kpoint)
   INTEGER :: nkgrid_1
   !! Number of k point grids along crystal lattice vector 1.
   !! Used only if kpoint_type is grid
@@ -144,13 +150,10 @@ SUBROUTINE param_read
 !------------------------------------------------------------------------
 !! Read input parameters and calculate derived values
 !------------------------------------------------------------------------
-  USE comms, ONLY : pi
+  USE comms, ONLY : pi, find_free_unit
   IMPLICIT NONE
   LOGICAL :: found
-  INTEGER :: ierr, i_temp, loop_spts, ik1, ik2, loop_i, counter, ik, nlen_temp
-  REAL(DP) :: vec(2)
-  REAL(DP), ALLOCATABLE :: xval(:), kpath_len(:)
-  INTEGER, ALLOCATABLE :: kpath_pts(:)
+  INTEGER :: ierr, i_temp, ik1, ik2, ik, nlen_temp, iunk
   !
   CALL param_in_file
   !
@@ -231,54 +234,24 @@ SUBROUTINE param_read
   IF (.NOT. found) CALL io_error('kpoint_type must be set')
   !
   ! set kpoints path
-  IF (kpoint_type == 'path') THEN
-    bands_num_spec_points=0
-    CALL param_get_block_length('kpoint_path', found, i_temp)
-    IF (found) THEN
-      bands_num_spec_points = i_temp * 2
-      ALLOCATE(bands_label(bands_num_spec_points), stat=ierr)
-      IF (ierr/=0) CALL io_error('Error allocating bands_label in param_read')
-      ALLOCATE(bands_spec_points(2,bands_num_spec_points),stat=ierr)
-      IF (ierr/=0) CALL io_error('Error allocating bands_spec_points in param_read')
-      CALL param_get_keyword_kpath
-    ENDIF
-    CALL param_get_keyword('bands_num_points',found,i_value=bands_num_points)
+  IF (kpoint_type == 'file') THEN
+    CALL param_get_keyword('kpoint_file', found, c_value=kpoint_file)
+    IF (.NOT. found) CALL io_error('If kpoint_type is file, kpoint_file must be set')
     !
-    num_paths = bands_num_spec_points / 2
-    ALLOCATE(kpath_len(num_paths))
-    ALLOCATE(kpath_pts(num_paths))
-    ! num_spts=num_paths+1
-    DO loop_spts = 1, num_paths
-      vec = bands_spec_points(:, 2*loop_spts) - bands_spec_points(:, 2*loop_spts-1)
-      ! kpath_len(loop_spts)=sqrt(dot_product(vec,(matmul(recip_metric,vec))))
-      kpath_len(loop_spts) = 1.0_dp
-      IF (loop_spts == 1) THEN
-        kpath_pts(loop_spts)=bands_num_points
-      ELSE
-        kpath_pts(loop_spts)=nint(real(bands_num_points,dp)*kpath_len(loop_spts)/kpath_len(1))
-      ENDIF
+    iunk = find_free_unit()
+    OPEN(UNIT=iunk, FILE=TRIM(kpoint_file), ACTION='read', IOSTAT=ierr)
+    IF (ierr /= 0) CALL io_error('Error opening ' // TRIM(kpoint_file))
+    !
+    READ(iunk, *, IOSTAT=ierr) num_kpoint
+    IF (ierr /= 0) CALL io_error('Error reading num_kpoint from ' // TRIM(kpoint_file))
+    !
+    ALLOCATE(kpoints(2, num_kpoint))
+    DO ik = 1, num_kpoint
+      READ(iunk, *, IOSTAT=ierr) kpoints(1,ik), kpoints(2,ik)
+      IF (ierr /= 0) CALL io_error('Error reading num_kpoint from ' // TRIM(kpoint_file))
     ENDDO
-    num_kpoint = SUM(kpath_pts)+1
-
-    ALLOCATE(kpoints(2,num_kpoint), stat=ierr)
-    ALLOCATE(xval(num_kpoint), stat=ierr)
-
-    counter=0
-    DO loop_spts=1,num_paths
-      DO loop_i=1,kpath_pts(loop_spts)
-        counter = counter+1
-        IF (counter == 1) THEN
-          xval(counter)=0.0_dp
-        ELSE
-          xval(counter)=xval(counter-1)+kpath_len(loop_spts)/real(kpath_pts(loop_spts),dp)
-        ENDIF
-        kpoints(:,counter)=bands_spec_points(:,2*loop_spts-1)+ &
-             (bands_spec_points(:,2*loop_spts)-bands_spec_points(:,2*loop_spts-1))* &
-             (real(loop_i-1,dp)/real(kpath_pts(loop_spts),dp))
-      ENDDO
-    ENDDO
-    xval(num_kpoint)=sum(kpath_len)
-    kpoints(:,num_kpoint)=bands_spec_points(:,bands_num_spec_points)
+    !
+    CLOSE(iunk)
   ELSE IF (kpoint_type == 'grid') THEN
     k1_min = -0.5d0
     k1_max = 0.5d0
@@ -306,178 +279,10 @@ SUBROUTINE param_read
       ENDDO
     ENDDO
   ELSE
-    CALL io_error('kpoint_type not understood. It must be path or grid.')
+    CALL io_error('kpoint_type not understood. It must be file or grid.')
   ENDIF
 !------------------------------------------------------------------------
 END SUBROUTINE param_read
-!------------------------------------------------------------------------
-!
-!------------------------------------------------------------------------
-SUBROUTINE param_get_keyword_kpath
-!------------------------------------------------------------------------
-!!  Fills the kpath data block
-!------------------------------------------------------------------------
-  IMPLICIT NONE
-  LOGICAL :: found_e,found_s
-  CHARACTER(LEN=20) :: keyword
-  CHARACTER(LEN=maxlen) :: dummy,end_st,start_st
-  INTEGER :: in,ins,ine,loop,i,line_e,line_s,counter
-
-  keyword = "kpoint_path"
-
-  found_s = .false.
-  found_e = .false.
-
-  start_st='begin '//trim(keyword)
-  end_st='end '//trim(keyword)
-
-  do loop=1,num_lines
-    ins=index(in_data(loop),trim(keyword))
-    if (ins==0 ) cycle
-    in=index(in_data(loop),'begin')
-    if (in==0 .or. in>1) cycle
-    line_s=loop
-    if (found_s) then
-      call io_error('Error: Found '//trim(start_st)//' more than once in input file')
-    endif
-    found_s=.true.
-  end do
-
-  do loop=1,num_lines
-    ine=index(in_data(loop),trim(keyword))
-    if (ine==0 ) cycle
-    in=index(in_data(loop),'end')
-    if (in==0 .or. in>1) cycle
-    line_e=loop
-    if (found_e) then
-      call io_error('Error: Found '//trim(end_st)//' more than once in input file')
-    endif
-    found_e=.true.
-  end do
-
-  if(.not. found_e) then
-    call io_error('Error: Found '//trim(start_st)//' but no '//trim(end_st)//' in input file')
-  end if
-
-  if(line_e<=line_s) then
-    call io_error('Error: '//trim(end_st)//' comes before '//trim(start_st)//' in input file')
-  end if
-
-  counter=0
-  do loop=line_s+1,line_e-1
-    counter=counter+2
-    dummy=in_data(loop)
-    read(dummy,*,err=240,end=240) bands_label(counter-1),(bands_spec_points(i,counter-1),i=1,2)&
-         ,bands_label(counter),(bands_spec_points(i,counter),i=1,2)
-  end do
-
-  in_data(line_s:line_e)(1:maxlen) = ' '
-
-  RETURN
-
-240 CALL io_error('param_get_keyword_kpath: Problem reading kpath '//trim(dummy))
-!------------------------------------------------------------------------
-END SUBROUTINE param_get_keyword_kpath
-!------------------------------------------------------------------------
-!
-!------------------------------------------------------------------------
-SUBROUTINE param_get_block_length(keyword,found,rows,lunits)
-!------------------------------------------------------------------------
-!! Finds the length of the data block
-!------------------------------------------------------------------------
-  IMPLICIT NONE
-
-  character(*),      intent(in)  :: keyword
-  !! Keyword to examine
-  logical,           intent(out) :: found
-  !! Is keyword present
-  INTEGER,           intent(out) :: rows
-  !! Number of rows
-  logical, optional, intent(out) :: lunits
-  !! Have we found a unit specification
-
-  INTEGER           :: i,in,ins,ine,loop,line_e,line_s
-  logical           :: found_e,found_s
-  character(len=maxlen) :: end_st,start_st,dummy
-  character(len=2)  :: atsym
-  real(kind=dp)     :: atpos(3)
-
-  rows=0
-  found_s=.false.
-  found_e=.false.
-
-  start_st='begin '//trim(keyword)
-  end_st='end '//trim(keyword)
-
-  do loop=1,num_lines
-     ins=index(in_data(loop),trim(keyword))
-     if (ins==0 ) cycle
-     in=index(in_data(loop),'begin')
-     if (in==0 .or. in>1) cycle
-     line_s=loop
-     if (found_s) then
-        call io_error('Error: Found '//trim(start_st)//' more than once in input file')
-     endif
-     found_s=.true.
-  end do
-
-
-  if(.not. found_s) then
-     found=.false.
-     return
-  end if
-
-
-  do loop=1,num_lines
-     ine=index(in_data(loop),trim(keyword))
-     if (ine==0 ) cycle
-     in=index(in_data(loop),'end')
-     if (in==0 .or. in>1) cycle
-     line_e=loop
-     if (found_e) then
-        call io_error('Error: Found '//trim(end_st)//' more than once in input file')
-     endif
-     found_e=.true.
-  end do
-
-
-  if(.not. found_e) then
-     call io_error('Error: Found '//trim(start_st)//' but no '//trim(end_st)//' in input file')
-  end if
-
-  if(line_e<=line_s) then
-     call io_error('Error: '//trim(end_st)//' comes before '//trim(start_st)//' in input file')
-  end if
-
-  rows=line_e-line_s-1
-
-  found=.true.
-
-  if (present(lunits)) then
-     dummy=in_data(line_s+1)
-     !       write(stdout,*) dummy
-     !       write(stdout,*) trim(dummy)
-     read(dummy,*,end=555) atsym, (atpos(i),i=1,3)
-     lunits=.false.
-  endif
-
-  if(rows<=0) then !cope with empty blocks
-     found=.false.
-     in_data(line_s:line_e)(1:maxlen) = ' '
-  end if
-
-  RETURN
-
-555 lunits=.true.
-
-  if(rows<=1) then !cope with empty blocks
-     found=.false.
-     in_data(line_s:line_e)(1:maxlen) = ' '
-  end if
-  !
-  RETURN
-!------------------------------------------------------------------------
-END SUBROUTINE param_get_block_length
 !------------------------------------------------------------------------
 !
 !------------------------------------------------------------------------

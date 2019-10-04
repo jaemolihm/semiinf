@@ -6,5 +6,5 @@ Also, one can open the ipython notebook `examplexx/examplexx.ipynb` and follow t
 The tight-binding models used in the examples are generated either using the `wannier\_tb.py` utility, or using the wannier90.x program after DFT calculations.
 
 ## List of examples
-- example01: s orbitals on a cubic lattice. Bulk and surface band structures and DOS.
- - Tight-binding model is generated using `util/wannier\_tb.py`
+* example01: s orbitals on a cubic lattice. Bulk and surface band structures and DOS.
+    * Tight-binding model is generated using `util/wannier\_tb.py`

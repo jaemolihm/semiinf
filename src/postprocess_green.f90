@@ -5,7 +5,7 @@ MODULE postprocess_green
 !------------------------------------------------------------------------
   USE comms, ONLY : DP, io_error, is_root, cone, czero, pi
   USE parameters, ONLY : seedname, is_ideal_surf, isspin, nbulk, nsurf, green_s, &
-    green_s1, green_b, kx, ky, omega
+    green_s1, green_b, omega
   USE hamiltonian, ONLY : h01, h11, h12
   !
   IMPLICIT NONE
@@ -97,7 +97,6 @@ END SUBROUTINE get_dos_b
 !     ALLOCATE(spnk(nsurf,nsurf))
 !     spin_out = 0.0_dp
 !     DO ispin = 1, 3
-!         CALL k_operator(snrpts, spnr(1:nsurf, 1:nsurf,:,ispin), srvec, sndegen, kx, ky, spnk)
 !         DO ii = 1, fin_nup
 !             i = fin_ind_up(ii)
 !             DO jj = 1, fin_nup
@@ -121,7 +120,6 @@ END SUBROUTINE get_dos_b
 !     ALLOCATE(spnk(nsurf,nsurf))
 !     spin_out = 0.0_dp
 !     DO ispin = 1, 3
-!         CALL k_operator(snrpts, spnr(1:nsurf, 1:nsurf,:,ispin), srvec, sndegen, kx, ky, spnk)
 !         DO ii = 1, fin_ndn
 !             i = fin_ind_dn(ii)
 !             DO jj = 1, fin_ndn

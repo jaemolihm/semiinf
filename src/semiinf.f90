@@ -131,7 +131,7 @@ SUBROUTINE run_kpoint(ik)
 !! Main driver of the calculation for each k point.
 !! For given kx and ky, calculate Green function and write DOS to file
 !------------------------------------------------------------------------
-  USE parameters, ONLY : kpoints, omega, kx, ky
+  USE parameters, ONLY : kpoints, omega
   USE hamiltonian, ONLY : hamiltonian_tb_to_k
   USE iter_bulk, ONLY : iter_bulk_main
   USE iter_slab, ONLY : iter_slab_main
@@ -141,6 +141,10 @@ SUBROUTINE run_kpoint(ik)
   IMPLICIT NONE
   INTEGER, INTENT(IN) :: ik
   !! Index of the k point to be calculated
+  REAL(DP) :: kx
+  !! k vector along x axis, in crystal coordinate
+  REAL(DP) :: ky
+  !! k vector along y axis, in crystal coordinate
   INTEGER :: ie, il
   !
   ! Set k-dependent hamiltonian

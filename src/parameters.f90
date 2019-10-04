@@ -91,10 +91,6 @@ MODULE parameters
   !! name of the input file. Read as inline argument.
   COMPLEX(DP), PUBLIC :: omega
   !! Frequency to calculate Green function. omega = energy - i * sigma
-  REAL(DP), PUBLIC :: kx
-  !! k vector along x axis, in crystal coordinate
-  REAL(DP), PUBLIC :: ky
-  !! k vector along y axis, in crystal coordinate
   COMPLEX(DP), ALLOCATABLE :: green_s(:,:)
   !! Green function for the surface principal layer
   COMPLEX(DP), ALLOCATABLE :: green_s1(:,:)

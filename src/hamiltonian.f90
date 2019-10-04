@@ -60,9 +60,9 @@ SUBROUTINE hamiltonian_setup()
   ! reading seedname_hr.dat
   IF (isslab) THEN
     IF (hr_stitching) THEN
-      CALL read_hamiltonian(0, hr0, rvec0, ndegen0, nrpts0, TRIM(seedname)//".bulk")
-      CALL read_hamiltonian(bulk_rz, hr1, rvec1, ndegen1, nrpts1, TRIM(seedname)//".bulk")
-      CALL read_hamiltonian(0, hr0s, rvec0s, ndegen0s, nrpts0s, TRIM(seedname)//".slab")
+      CALL read_hr_dat(0, hr0, rvec0, ndegen0, nrpts0, TRIM(seedname)//".bulk")
+      CALL read_hr_dat(bulk_rz, hr1, rvec1, ndegen1, nrpts1, TRIM(seedname)//".bulk")
+      CALL read_hr_dat(0, hr0s, rvec0s, ndegen0s, nrpts0s, TRIM(seedname)//".slab")
       seedname = TRIM(seedname) // ".slab"
       !
       ! Calculate the required onsite energy shift
@@ -90,11 +90,11 @@ SUBROUTINE hamiltonian_setup()
       IF (is_root) WRITE(*,*) "bulk_shift = ", bulk_shift
       IF (is_root) WRITE(*,*) "Note: this may(should) be small if util_match is used to generate slab hr.dat file"
     ELSE ! isslab and .NOT. hr_stitching)
-      CALL read_hamiltonian(0, hr0, rvec0, ndegen0, nrpts0, TRIM(seedname))
+      CALL read_hr_dat(0, hr0, rvec0, ndegen0, nrpts0, TRIM(seedname))
     ENDIF ! hr_stitching
   ELSE ! .NOT. isslab
-    CALL read_hamiltonian(0, hr0, rvec0, ndegen0, nrpts0, TRIM(seedname))
-    CALL read_hamiltonian(bulk_rz, hr1, rvec1, ndegen1, nrpts1, TRIM(seedname))
+    CALL read_hr_dat(0, hr0, rvec0, ndegen0, nrpts0, TRIM(seedname))
+    CALL read_hr_dat(bulk_rz, hr1, rvec1, ndegen1, nrpts1, TRIM(seedname))
   ENDIF
 !------------------------------------------------------------------------
 END SUBROUTINE hamiltonian_setup
@@ -150,7 +150,7 @@ END SUBROUTINE hamiltonian_tb_to_k
 !------------------------------------------------------------------------
 !
 !------------------------------------------------------------------------
-SUBROUTINE read_hamiltonian(nr3, hr_nr3, rvec_nr3, ndegen_nr3, irpts_nr3, prefix)
+SUBROUTINE read_hr_dat(nr3, hr_nr3, rvec_nr3, ndegen_nr3, irpts_nr3, prefix)
 !------------------------------------------------------------------------
 !! Read seedname_hr.dat file, parse hamiltonian elements <m0|H|nR>
 !! such that R(3) == nr3
@@ -231,7 +231,7 @@ SUBROUTINE read_hamiltonian(nr3, hr_nr3, rvec_nr3, ndegen_nr3, irpts_nr3, prefix
   IF (is_root) write(*,'("Hamiltonian_",I2," shape : ",3I5)') nr3, SHAPE(hr_nr3)
   IF (is_root) write(*,*) 'end reading ' // TRIM(filename)
 !------------------------------------------------------------------------
-END SUBROUTINE read_hamiltonian
+END SUBROUTINE read_hr_dat
 !------------------------------------------------------------------------
 !
 !------------------------------------------------------------------------

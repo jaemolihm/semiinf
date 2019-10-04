@@ -145,18 +145,26 @@ SUBROUTINE param_read
   ! Set default values
   hopping_tol = 1.D-8
   max_n_iter = 40
-  isspin = .false.
+  isspin = .FALSE.
   bulk_rz = 1
   ! read parameters
   CALL param_get_keyword('hopping_tol', found, r_value=hopping_tol)
   CALL param_get_keyword('max_n_iter', found, i_value=max_n_iter)
   CALL param_get_keyword('isspin', found, l_value=isspin)
+  !
   CALL param_get_keyword('is_ideal_surf', found, l_value=is_ideal_surf)
+  IF (.NOT. found) CALL io_error('is_ideal_surf must be set')
+  !
   CALL param_get_keyword('hr_stitching', found, l_value=hr_stitching)
   if (.NOT. is_ideal_surf .AND. .NOT. found) &
     CALL io_error('If is_ideal_surf, hr_stitching must be set.')
-  CALL param_get_keyword('nsurf', found, i_value=nsurf)
   CALL param_get_keyword('nbulk', found, i_value=nbulk)
+  IF (.NOT. found) CALL io_error('nbulk must be set')
+  !
+  CALL param_get_keyword('nsurf', found, i_value=nsurf)
+  IF (.NOT. is_ideal_surf .AND. .NOT. found) &
+    CALL io_error('If not is_ideal_surf, nsurf must be set')
+  !
   CALL param_get_keyword('bulk_rz', found, i_value=bulk_rz)
   !
   ! Check validity of input parameters

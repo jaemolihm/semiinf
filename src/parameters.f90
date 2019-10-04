@@ -90,7 +90,7 @@ MODULE parameters
   CHARACTER(LEN=256) :: input_filename
   !! name of the input file. Read as inline argument.
   COMPLEX(DP), PUBLIC :: omega
-  !! energy - i * sigma
+  !! Frequency to calculate Green function. omega = energy - i * sigma
   REAL(DP), PUBLIC :: kx
   !! k vector along x axis, in crystal coordinate
   REAL(DP), PUBLIC :: ky

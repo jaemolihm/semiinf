@@ -145,6 +145,7 @@ SUBROUTINE run_kpoint(ik)
   ky = kpoints(2, ik)
   WRITE(*, '("ik = ", I4, " kx = ", F6.3, " ky = ", F6.3)') ik, kx, ky
   CALL hamiltonian_tb_to_k(kx, ky)
+  !
   ! Loop over energy points
   DO ie = 1, num_energy
     omega = energy(ie) * cone - sigma * ci
@@ -155,8 +156,7 @@ SUBROUTINE run_kpoint(ik)
       CALL iter_bulk_main(flag_converged)
     ENDIF
     IF (.NOT. flag_converged) &
-      WRITE(*, '("WARNING: DOS NOT converged, s=",ES8.1," ik=",I4," ie=",I5)') &
-        sigma, ik, ie
+      WRITE(*, '("WARNING: DOS NOT converged, ik=",I8," ie=",I8)') ik, ie
     !
     ! Postprocess Green functions to calculate DOS, spin-DOS, etc.
     CALL set_transfer_mat()

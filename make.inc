@@ -12,8 +12,11 @@ DFLAGS = -fpp -D__MPI
 #=====================================================
 F90    = ifort
 MPIF90 = mpifort
-FCOPTS = $(DFLAGS) -O2 -g -traceback -assume buffered_io
-LDOPTS = $(DFLAGS) -O2 -g -traceback -assume buffered_io
+#FCOPTS = $(DFLAGS) -O2 -g -traceback -assume buffered_io
+#LDOPTS = $(DFLAGS) -O2 -g -traceback -assume buffered_io
+# For debugging
+FCOPTS = $(DFLAGS) -O2 -g -traceback -assume buffered_io -warn all -check all
+LDOPTS = $(DFLAGS) -O2 -g -traceback -assume buffered_io -warn all -check all
 
 #========================================================
 # Intel mkl libraries. Set LIBPATH if not in default path

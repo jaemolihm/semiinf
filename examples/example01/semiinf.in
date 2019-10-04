@@ -1,0 +1,28 @@
+seedname = cubic_s
+
+is_ideal_surf = .false.
+hr_stitching = .true.
+nsurf = 1
+nbulk = 1
+# top surface
+ind_0 = 1
+ind_1 = 2
+bulk_rz = -1
+# bottom surface
+# ind_0 = 3
+# ind_1 = 2
+# bulk_rz = 1
+
+sigma = 1.0D-3
+#n_dos_layer = 1
+isspin = .false.
+
+HOPPING_TOL = 1.D-8
+MAX_N_ITER = 40
+
+dos_e_min = -6.0
+dos_e_max = 8.0
+dos_e_step = 5.0D-2
+
+kpoint_type = file
+kpoint_file = kpath.dat

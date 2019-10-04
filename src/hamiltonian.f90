@@ -4,7 +4,7 @@ MODULE hamiltonian
 !! Module for real space hamintonian
 !------------------------------------------------------------------------
   USE comms, ONLY : DP, is_root, io_error
-  USE parameters, ONLY : isslab, hr_stitching, nsurf, nbulk
+  USE parameters, ONLY : is_ideal_surf, hr_stitching, nsurf, nbulk
   !
   IMPLICIT NONE
   !
@@ -63,7 +63,7 @@ SUBROUTINE hamiltonian_setup()
   INTEGER :: i, ir, ierr
   !
   ! allocation
-  IF (isslab) THEN
+  IF (.NOT. is_ideal_surf) THEN
     ALLOCATE(h00(nsurf, nsurf), STAT=ierr)
     ALLOCATE(h01(nsurf, nbulk), STAT=ierr)
     ALLOCATE(h11(nbulk, nbulk), STAT=ierr)
@@ -91,7 +91,7 @@ SUBROUTINE hamiltonian_setup()
   ALLOCATE(spnr0(1,1,1,1))
   ALLOCATE(srvec0(1,1))
   ALLOCATE(sndegen0(1))
-  IF ((.NOT. isslab) .OR. (isslab .AND. hr_stitching)) THEN
+  IF (is_ideal_surf .OR. (.NOT. is_ideal_surf .AND. hr_stitching)) THEN
     ALLOCATE(hr1(1,1,1))
     ALLOCATE(rvec1(1,1))
     ALLOCATE(ndegen1(1))
@@ -99,7 +99,7 @@ SUBROUTINE hamiltonian_setup()
     ALLOCATE(srvec1(1,1))
     ALLOCATE(sndegen1(1))
   ENDIF
-  IF (isslab .AND. hr_stitching) THEN
+  IF (.NOT. is_ideal_surf .AND. hr_stitching) THEN
     ALLOCATE(hr0s(1,1,1))
     ALLOCATE(rvec0s(1,1))
     ALLOCATE(ndegen0s(1))
@@ -109,7 +109,7 @@ SUBROUTINE hamiltonian_setup()
   ENDIF
   !
   ! reading seedname_hr.dat
-  IF (isslab) THEN
+  IF (.NOT. is_ideal_surf) THEN
     IF (hr_stitching) THEN
       CALL read_hr_dat(0, hr0, rvec0, ndegen0, nrpts0, TRIM(seedname)//".bulk")
       CALL read_hr_dat(bulk_rz, hr1, rvec1, ndegen1, nrpts1, TRIM(seedname)//".bulk")
@@ -144,13 +144,13 @@ SUBROUTINE hamiltonian_setup()
       bulk_shift = CMPLX(REAL(bulk_shift / nbulk, DP), 0.0_dp, DP)
       IF (is_root) WRITE(*,*) "bulk_shift = ", bulk_shift
       IF (is_root) WRITE(*,*) "Note: this may(should) be small if util_match is used to generate slab hr.dat file"
-    ELSE ! isslab and .NOT. hr_stitching)
+    ELSE ! .NOT. is_ideal_surf and .NOT. hr_stitching
       CALL read_hr_dat(0, hr0, rvec0, ndegen0, nrpts0, TRIM(seedname))
       IF (isspin) THEN
         CALL read_spnr_dat(0, spnr0, srvec0, sndegen0, snrpts0, TRIM(seedname))
       ENDIF
     ENDIF ! hr_stitching
-  ELSE ! .NOT. isslab
+  ELSE ! is_ideal_surf
     CALL read_hr_dat(0, hr0, rvec0, ndegen0, nrpts0, TRIM(seedname))
     CALL read_hr_dat(bulk_rz, hr1, rvec1, ndegen1, nrpts1, TRIM(seedname))
     IF (isspin) THEN
@@ -182,7 +182,7 @@ SUBROUTINE hamiltonian_tb_to_k(kx, ky)
   INTEGER :: is
   !! Spin direction index (1=x, 2=y, 3=z)
   !
-  IF (isslab) THEN
+  IF (.NOT. is_ideal_surf) THEN
     IF (hr_stitching) THEN
       ALLOCATE(htemp(num_hr_wann,num_hr_wann))
       CALL k_operator(nrpts0, hr0, rvec0, ndegen0, kx, ky, h11)
@@ -206,7 +206,7 @@ SUBROUTINE hamiltonian_tb_to_k(kx, ky)
         ENDDO
       ENDIF ! isspin
       DEALLOCATE(htemp)
-    ELSE ! isslab and hr_stitching
+    ELSE ! .NOT. is_ideal_surf and hr_stitching
       ALLOCATE(htemp(num_hr_wann,num_hr_wann))
       CALL k_operator(nrpts0, hr0, rvec0, ndegen0, kx, ky, htemp)
       h00 = htemp(ind_0, ind_0)
@@ -224,7 +224,7 @@ SUBROUTINE hamiltonian_tb_to_k(kx, ky)
       ENDIF
       DEALLOCATE(htemp)
     ENDIF ! hr_stitching
-  ELSE !.NOT. isslab
+  ELSE ! is_ideal_surf
     CALL k_operator(nrpts0, hr0, rvec0, ndegen0, kx, ky, h11)
     CALL k_operator(nrpts1, hr1, rvec1, ndegen1, kx, ky, h12)
     IF (isspin) THEN

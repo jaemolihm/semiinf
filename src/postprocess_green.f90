@@ -4,7 +4,7 @@ MODULE postprocess_green
 !! Driver of postprocessing the Green function to calculate dos and spin-dos
 !------------------------------------------------------------------------
   USE comms, ONLY : DP, io_error, is_root, cone, czero, pi
-  USE parameters, ONLY : seedname, isslab, isspin, nbulk, nsurf, green_s, &
+  USE parameters, ONLY : seedname, is_ideal_surf, isspin, nbulk, nsurf, green_s, &
     green_s1, green_b, kx, ky, omega
   USE hamiltonian, ONLY : h01, h11, h12
   !
@@ -220,7 +220,7 @@ SUBROUTINE set_green_layer(nl)
   !
   ! Calculate green_layer using recurrence relations
   DO il = il_from, il_to
-    IF ((il == 1) .AND. isslab) THEN
+    IF (il == 1 .AND. (.NOT. is_ideal_surf)) THEN
       ! green_layer(:,:,1) = teff_mat + ( ( (teff_mat * h01^dagger) * green_s) * h01) * seff_mat
       ALLOCATE(temp_mat1(nbulk,nsurf))
       ALLOCATE(temp_mat2(nbulk,nsurf))
@@ -233,7 +233,7 @@ SUBROUTINE set_green_layer(nl)
       DEALLOCATE(temp_mat1)
       DEALLOCATE(temp_mat2)
       DEALLOCATE(temp_mat3)
-    ELSE IF((il == 1) .AND. .NOT.(isslab)) THEN
+    ELSE IF(il == 1 .AND. is_ideal_surf) THEN
       ! temp_mat1 = t_mat * green_s
       ! green_layer(:,:,1) = green_s + temp_mat1 * s_mat
       ALLOCATE(temp_mat1(nbulk,nbulk))
@@ -241,7 +241,7 @@ SUBROUTINE set_green_layer(nl)
       CALL ZGEMM('N','N',nbulk,nbulk,nbulk,cone, t_mat, nbulk, green_s, nbulk,czero, temp_mat1, nbulk)
       CALL ZGEMM('N','N',nbulk,nbulk,nbulk,cone, temp_mat1, nbulk, s_mat, nbulk,cone, green_layer(:,:,1), nbulk)
       DEALLOCATE(temp_mat1)
-    ELSE IF ((il > 1) .AND. isslab) THEN
+    ELSE IF (il > 1 .AND. (.NOT. is_ideal_surf)) THEN
       ! green_layer(:,:,il) = teff_mat + ( (teff_mat * h12^dagger) * green_layer(:,:,il-1)) * s_mat
       ALLOCATE(temp_mat1(nbulk,nbulk))
       ALLOCATE(temp_mat2(nbulk,nbulk))
@@ -251,7 +251,7 @@ SUBROUTINE set_green_layer(nl)
       CALL ZGEMM('N','N',nbulk,nbulk,nbulk,cone, temp_mat2, nbulk, s_mat, nbulk,cone, green_layer(:,:,il), nbulk)
       DEALLOCATE(temp_mat1)
       DEALLOCATE(temp_mat2)
-    ELSE ! il > 1 and .NOT. isslab
+    ELSE ! il > 1 and is_ideal_surf
       ! green_layer(:,:,il) = green_s + ( (t_mat * green_layer(:,:,il-1)) * s_mat )
       ALLOCATE(temp_mat1(nbulk,nbulk))
       CALL ZCOPY(nbulk*nbulk, green_s, 1, green_layer(:,:,il), 1)
@@ -276,7 +276,7 @@ SUBROUTINE set_transfer_mat()
   IMPLICIT NONE
   !
   COMPLEX(DP), ALLOCATABLE :: temp_mat(:,:)
-  IF (isslab) THEN
+  IF (.NOT. is_ideal_surf) THEN
     ! t_mat = green_s1 * h12^dagger
     CALL ZGEMM('N','C',nbulk,nbulk,nbulk,cone,green_s1,nbulk,h12,nbulk,czero,t_mat,nbulk)
     ! s_mat = h12 * green_s1
@@ -294,7 +294,7 @@ SUBROUTINE set_transfer_mat()
     CALL ZGEMM('N','C',nbulk,nbulk,nbulk,cone, s_mat, nbulk, h12, nbulk,cone, temp_mat, nbulk)
     CALL inv_omega_minus_mat(nbulk, temp_mat, omega, seff_mat, 'set_transfer_mat for teff_mat')
     DEALLOCATE(temp_mat)
-  ELSE ! .NOT. isslab
+  ELSE ! is_ideal_surf
     ! t_mat = green_s * h12^dagger
     CALL ZGEMM('N','C',nbulk,nbulk,nbulk,cone,green_s,nbulk,h12,nbulk,czero,t_mat,nbulk)
     ! s_mat = h12 * green_s
@@ -327,9 +327,9 @@ SUBROUTINE pp_green_setup()
   ALLOCATE(green_b(nbulk,nbulk), STAT=ierr)
   ALLOCATE(t_mat(nbulk,nbulk), STAT=ierr)
   ALLOCATE(s_mat(nbulk,nbulk), STAT=ierr)
-  IF (isslab) ALLOCATE(green_s1(nbulk,nbulk), STAT=ierr)
-  IF (isslab) ALLOCATE(teff_mat(nbulk,nbulk))
-  IF (isslab) ALLOCATE(seff_mat(nbulk,nbulk))
+  IF (.NOT. is_ideal_surf) ALLOCATE(green_s1(nbulk,nbulk), STAT=ierr)
+  IF (.NOT. is_ideal_surf) ALLOCATE(teff_mat(nbulk,nbulk))
+  IF (.NOT. is_ideal_surf) ALLOCATE(seff_mat(nbulk,nbulk))
   IF (ierr /= 0) CALL io_error('Error during allocation in pp_green_allocate')
 END SUBROUTINE pp_green_setup
 !------------------------------------------------------------------------

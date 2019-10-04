@@ -16,8 +16,8 @@ MODULE parameters
   ! --------------------- input variables ---------------------
   CHARACTER(LEN=256) :: seedname
   !! Prefix of the .dat files.
-  LOGICAL :: isslab
-  !! Is the calculation with surface modification. If .false., all principal
+  LOGICAL :: is_ideal_surf
+  !! Is the calculation with surface modification. If .TRUE., all principal
   !! layers, including the surface principal layer, are identical.
   LOGICAL :: hr_stitching
   !! Is the calculation with surface (slab) and bulk matching.
@@ -28,22 +28,22 @@ MODULE parameters
   !! Number of basis functions for the bulk principal layer
   INTEGER :: nsurf
   !! Number of basis functions for the surface principal layer
-  !! If .not. isslab, automatically set to nbulk.
+  !! If is_ideal_surf, automatically set to nbulk, but not used.
   INTEGER, ALLOCATABLE :: ind_0(:)
   !! (nsurf) Indices of basis functions for surface principal layer.
-  !! Used only if isslab is true.
+  !! Used only if is_ideal_surf is false.
   INTEGER, ALLOCATABLE :: ind_1(:)
   !! (nbulk) Indices of basis functions for bulk principal layer.
-  !! Used only if isslab is true.
+  !! Used only if is_ideal_surf is false.
   INTEGER, ALLOCATABLE :: ind_2(:)
   !! (nbulk) Indices of basis functions for second bulk principal layer.
   !! Used to set the bulk-bulk interlayer hopping.
-  !! Used only if isslab is true and hr_stitching is false.
+  !! Used only if is_ideal_surf is false and hr_stitching is false.
   INTEGER :: bulk_rz
   !! 1 or -1. Determines the surface normal direction. Default is 1.
   !! From bulk _hr.dat, read matrix elements <m0|H|nR> with R_3 == bulk_rz
-  !! Used only if isslab is false or hr_stitching is true.
-  !! If isslab is true and hr_stitching is false, the surface normal direction
+  !! Used only if is_ideal_surf is false or hr_stitching is true.
+  !! If is_ideal_surf is false and hr_stitching is false, the surface normal direction
   !! is determined by ind_0,1,2.
   REAL(DP) :: hopping_tol
   !! Convergence criterion of the iterative surface Green function calculation
@@ -117,7 +117,7 @@ MODULE parameters
 CONTAINS
 !------------------------------------------------------------------------
 SUBROUTINE param_write
-  WRITE(*,'("isslab = ", L)') isslab
+  WRITE(*,'("is_ideal_surf = ", L)') is_ideal_surf
   WRITE(*,'("hr_stitching = ", L)') hr_stitching
   WRITE(*,'("nsurf = ", I)') nsurf
   WRITE(*,'("nbulk = ", I)') nbulk
@@ -151,23 +151,24 @@ SUBROUTINE param_read
   CALL param_get_keyword('hopping_tol', found, r_value=hopping_tol)
   CALL param_get_keyword('max_n_iter', found, i_value=max_n_iter)
   CALL param_get_keyword('isspin', found, l_value=isspin)
-  CALL param_get_keyword('isslab', found, l_value=isslab)
+  CALL param_get_keyword('is_ideal_surf', found, l_value=is_ideal_surf)
   CALL param_get_keyword('hr_stitching', found, l_value=hr_stitching)
-  if (isslab .AND. .NOT. found) &
-    CALL io_error('If isslab, hr_stitching must be set.')
+  if (.NOT. is_ideal_surf .AND. .NOT. found) &
+    CALL io_error('If is_ideal_surf, hr_stitching must be set.')
   CALL param_get_keyword('nsurf', found, i_value=nsurf)
   CALL param_get_keyword('nbulk', found, i_value=nbulk)
   CALL param_get_keyword('bulk_rz', found, i_value=bulk_rz)
   !
   ! Check validity of input parameters
-  if (isslab .AND. (.NOT. hr_stitching) .AND. (nsurf <= nbulk)) &
-    CALL io_error('ERROR: if isslab and not hr_stitching, nsurf must be greater than nbulk')
+  if (.NOT. is_ideal_surf .AND. (.NOT. hr_stitching) .AND. (nsurf <= nbulk)) &
+    CALL io_error('ERROR: if not is_ideal_surf and not hr_stitching, nsurf must be greater than nbulk')
+    ! FIXME : why?
   !
-  IF (.NOT. isslab) THEN
+  IF (is_ideal_surf) THEN
     nsurf = nbulk
   ENDIF
   !
-  IF (isslab) THEN
+  IF (.NOT. is_ideal_surf) THEN
     CALL param_get_range_vector('ind_0', found, nlen_temp, .TRUE.)
     IF (nlen_temp /= nsurf) &
       CALL io_error('ERROR: length of ind_0 must be equal to nsurf')
@@ -180,7 +181,7 @@ SUBROUTINE param_read
     ALLOCATE(ind_1(nbulk))
     CALL param_get_range_vector('ind_1', found, nbulk, .FALSE., ind_1)
   ENDIF
-  IF (isslab .and. .not. hr_stitching) THEN
+  IF (.NOT. is_ideal_surf .AND. .NOT. hr_stitching) THEN
     CALL param_get_range_vector('ind_2', found, nlen_temp, .TRUE.)
     IF (nlen_temp /= nbulk) &
       CALL io_error('ERROR: length of ind_2 must be equal to nbulk')

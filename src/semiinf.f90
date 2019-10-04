@@ -5,7 +5,7 @@ PROGRAM semiinf
 !------------------------------------------------------------------------
   USE comms, ONLY : DP, is_root, mp_setup, mp_barrier, mp_end, world_comm, &
     io_error, ci, cone, find_free_unit
-  USE parameters, ONLY : nbulk, isspin, isslab, sigma, num_energy, energy, &
+  USE parameters, ONLY : nbulk, isspin, is_ideal_surf, sigma, num_energy, energy, &
     input_filename, param_read, param_write
   USE iter_bulk, ONLY : iter_bulk_allocate
   USE iter_slab, ONLY : iter_slab_allocate
@@ -36,8 +36,11 @@ PROGRAM semiinf
   IF (is_root) CALL param_write()
   !
   ! Allocate array in modules
-  IF (isslab) CALL iter_slab_allocate()
-  IF ((.NOT. isslab)) CALL iter_bulk_allocate()
+  IF (is_ideal_surf) THEN
+    CALL iter_bulk_allocate()
+  ELSE
+    CALL iter_slab_allocate()
+  ENDIF
   CALL hamiltonian_setup()
   CALL pp_green_setup()
   !
@@ -150,10 +153,10 @@ SUBROUTINE run_kpoint(ik)
   DO ie = 1, num_energy
     omega = energy(ie) * cone - sigma * ci
     ! Compute Green function by iteration
-    IF (isslab) THEN
-      CALL iter_slab_main(flag_converged)
-    ELSE
+    IF (is_ideal_surf) THEN
       CALL iter_bulk_main(flag_converged)
+    ELSE
+      CALL iter_slab_main(flag_converged)
     ENDIF
     IF (.NOT. flag_converged) &
       WRITE(*, '("WARNING: DOS NOT converged, ik=",I8," ie=",I8)') ik, ie

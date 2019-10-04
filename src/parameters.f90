@@ -6,7 +6,7 @@ MODULE parameters
 !! This module contains parameters to control the actions of semiinf.x.
 !! Also have routines to read the parameters and write them out again.
 !------------------------------------------------------------------------
-  USE comms
+  USE comms, ONLY : DP, io_error
   IMPLICIT NONE
   !
   SAVE
@@ -16,8 +16,8 @@ MODULE parameters
   ! --------------------- input variables ---------------------
   CHARACTER(LEN=256) :: seedname
   !! Prefix of the .dat files.
-  LOGICAL :: isslab
-  !! Is the calculation with surface modification. If .false., all principal
+  LOGICAL :: is_ideal_surf
+  !! Is the calculation with surface modification. If .TRUE., all principal
   !! layers, including the surface principal layer, are identical.
   LOGICAL :: hr_stitching
   !! Is the calculation with surface (slab) and bulk matching.
@@ -28,22 +28,22 @@ MODULE parameters
   !! Number of basis functions for the bulk principal layer
   INTEGER :: nsurf
   !! Number of basis functions for the surface principal layer
-  !! If .not. isslab, automatically set to nbulk.
+  !! If is_ideal_surf, automatically set to nbulk, but not used.
   INTEGER, ALLOCATABLE :: ind_0(:)
   !! (nsurf) Indices of basis functions for surface principal layer.
-  !! Used only if isslab is true.
+  !! Used only if is_ideal_surf is false.
   INTEGER, ALLOCATABLE :: ind_1(:)
   !! (nbulk) Indices of basis functions for bulk principal layer.
-  !! Used only if isslab is true.
+  !! Used only if is_ideal_surf is false.
   INTEGER, ALLOCATABLE :: ind_2(:)
   !! (nbulk) Indices of basis functions for second bulk principal layer.
   !! Used to set the bulk-bulk interlayer hopping.
-  !! Used only if isslab is true and hr_stitching is false.
+  !! Used only if is_ideal_surf is false and hr_stitching is false.
   INTEGER :: bulk_rz
   !! 1 or -1. Determines the surface normal direction. Default is 1.
   !! From bulk _hr.dat, read matrix elements <m0|H|nR> with R_3 == bulk_rz
-  !! Used only if isslab is false or hr_stitching is true.
-  !! If isslab is true and hr_stitching is false, the surface normal direction
+  !! Used only if is_ideal_surf is false or hr_stitching is true.
+  !! If is_ideal_surf is false and hr_stitching is false, the surface normal direction
   !! is determined by ind_0,1,2.
   REAL(DP) :: hopping_tol
   !! Convergence criterion of the iterative surface Green function calculation
@@ -70,9 +70,27 @@ MODULE parameters
   !! TODO: enable the choice of the region to make the kpoint grid
   !! TODO: implement kpoint_type == 'file'
   INTEGER :: nkgrid_1
-  !! Number of k point grids along x direction. Used only if kpoint_type is grid
+  !! Number of k point grids along crystal lattice vector 1.
+  !! Used only if kpoint_type is grid
   INTEGER :: nkgrid_2
-  !! Number of k point grids along y direction. Used only if kpoint_type is grid
+  !! Number of k point grids along crystal lattice vector 2.
+  !! Used only if kpoint_type is grid
+  REAL(DP) :: k1_min
+  !! Minimum value of k along crystal lattice vector 1.
+  !! Used only if kpoint_type is grid.
+  !! Default is -0.5
+  REAL(DP) :: k1_max
+  !! Maximum value of k along crystal lattice vector 1.
+  !! Used only if kpoint_type is grid.
+  !! Default is +0.5
+  REAL(DP) :: k2_min
+  !! Minimum value of k along crystal lattice vector 2.
+  !! Used only if kpoint_type is grid.
+  !! Default is -0.5
+  REAL(DP) :: k2_max
+  !! Maximum value of k along crystal lattice vector 2.
+  !! Used only if kpoint_type is grid.
+  !! Default is +0.5
   !
   ! --------------------- derived variables ---------------------
   ! These variables are not directly read, but derived from the input variables
@@ -81,17 +99,22 @@ MODULE parameters
   REAL(DP), ALLOCATABLE :: energy(:)
   !! (num_energy) List of energy values to calculate DOS (in eV)
   INTEGER :: num_kpoint
-  !! number of sampled k-points
-  REAL(DP), ALLOCATABLE :: plot_kpoint(:,:)
+  !! number of sampled k-points, in crystal coordinates
+  REAL(DP), ALLOCATABLE :: kpoints(:,:)
   !! (3, num_kpoint) k points to calculate the spectral function
   !
   ! --------------------- other variables ---------------------
   ! These variables are not set during the input step.
-  ! FIXME: move these to elsewhere?
-  LOGICAL :: flag_converged
-  INTEGER :: n_iter
   CHARACTER(LEN=256) :: input_filename
   !! name of the input file. Read as inline argument.
+  COMPLEX(DP), PUBLIC :: omega
+  !! Frequency to calculate Green function. omega = energy - i * sigma
+  COMPLEX(DP), ALLOCATABLE :: green_s(:,:)
+  !! Green function for the surface principal layer
+  COMPLEX(DP), ALLOCATABLE :: green_s1(:,:)
+  !! Green function for the first sub-surface principal layer
+  COMPLEX(DP), ALLOCATABLE :: green_b(:,:)
+  !! Green function for a bulk principal layer
   !
   ! --------------------- private variables ---------------------
   ! For reading kpoint path
@@ -108,7 +131,7 @@ MODULE parameters
 CONTAINS
 !------------------------------------------------------------------------
 SUBROUTINE param_write
-  WRITE(*,'("isslab = ", L)') isslab
+  WRITE(*,'("is_ideal_surf = ", L)') is_ideal_surf
   WRITE(*,'("hr_stitching = ", L)') hr_stitching
   WRITE(*,'("nsurf = ", I)') nsurf
   WRITE(*,'("nbulk = ", I)') nbulk
@@ -121,9 +144,10 @@ SUBROUTINE param_read
 !------------------------------------------------------------------------
 !! Read input parameters and calculate derived values
 !------------------------------------------------------------------------
+  USE comms, ONLY : pi
   IMPLICIT NONE
   LOGICAL :: found
-  INTEGER :: ierr, i_temp, loop_spts, loop_i, loop_j, counter, ik
+  INTEGER :: ierr, i_temp, loop_spts, ik1, ik2, loop_i, counter, ik, nlen_temp
   REAL(DP) :: vec(2)
   REAL(DP), ALLOCATABLE :: xval(:), kpath_len(:)
   INTEGER, ALLOCATABLE :: kpath_pts(:)
@@ -135,37 +159,56 @@ SUBROUTINE param_read
   ! Set default values
   hopping_tol = 1.D-8
   max_n_iter = 40
-  isspin = .false.
+  isspin = .FALSE.
   bulk_rz = 1
   ! read parameters
   CALL param_get_keyword('hopping_tol', found, r_value=hopping_tol)
   CALL param_get_keyword('max_n_iter', found, i_value=max_n_iter)
   CALL param_get_keyword('isspin', found, l_value=isspin)
-  CALL param_get_keyword('isslab', found, l_value=isslab)
+  !
+  CALL param_get_keyword('is_ideal_surf', found, l_value=is_ideal_surf)
+  IF (.NOT. found) CALL io_error('is_ideal_surf must be set')
+  !
   CALL param_get_keyword('hr_stitching', found, l_value=hr_stitching)
-  if (isslab .AND. .NOT. found) &
-    CALL io_error('If isslab, hr_stitching must be set.')
-  CALL param_get_keyword('nsurf', found, i_value=nsurf)
+  if (.NOT. is_ideal_surf .AND. .NOT. found) &
+    CALL io_error('If is_ideal_surf, hr_stitching must be set.')
   CALL param_get_keyword('nbulk', found, i_value=nbulk)
+  IF (.NOT. found) CALL io_error('nbulk must be set')
+  !
+  CALL param_get_keyword('nsurf', found, i_value=nsurf)
+  IF (.NOT. is_ideal_surf .AND. .NOT. found) &
+    CALL io_error('If not is_ideal_surf, nsurf must be set')
+  !
   CALL param_get_keyword('bulk_rz', found, i_value=bulk_rz)
   !
   ! Check validity of input parameters
-  if (isslab .AND. (.NOT. hr_stitching) .AND. (nsurf <= nbulk)) &
-    CALL io_error('ERROR: if isslab and not hr_stitching, nsurf must be greater than nbulk')
+  if (.NOT. is_ideal_surf .AND. (.NOT. hr_stitching) .AND. (nsurf <= nbulk)) &
+    CALL io_error('ERROR: if not is_ideal_surf and not hr_stitching, nsurf must be greater than nbulk')
+    ! FIXME : why?
   !
-  IF (.NOT. isslab) THEN
+  IF (is_ideal_surf) THEN
     nsurf = nbulk
   ENDIF
   !
-  IF (isslab) THEN
+  IF (.NOT. is_ideal_surf) THEN
+    CALL param_get_range_vector('ind_0', found, nlen_temp, .TRUE.)
+    IF (nlen_temp /= nsurf) &
+      CALL io_error('ERROR: length of ind_0 must be equal to nsurf')
     ALLOCATE(ind_0(nsurf))
-    CALL param_get_range_vector('ind_0',found,nsurf,.false.,ind_0)
+    CALL param_get_range_vector('ind_0', found, nsurf,.FALSE., ind_0)
+    !
+    CALL param_get_range_vector('ind_1', found, nlen_temp, .TRUE.)
+    IF (nlen_temp /= nbulk) &
+      CALL io_error('ERROR: length of ind_1 must be equal to nbulk')
     ALLOCATE(ind_1(nbulk))
-    CALL param_get_range_vector('ind_1',found,nbulk,.false.,ind_1)
+    CALL param_get_range_vector('ind_1', found, nbulk, .FALSE., ind_1)
   ENDIF
-  IF (isslab .and. .not. hr_stitching) THEN
+  IF (.NOT. is_ideal_surf .AND. .NOT. hr_stitching) THEN
+    CALL param_get_range_vector('ind_2', found, nlen_temp, .TRUE.)
+    IF (nlen_temp /= nbulk) &
+      CALL io_error('ERROR: length of ind_2 must be equal to nbulk')
     ALLOCATE(ind_2(nbulk))
-    CALL param_get_range_vector('ind_2',found,nbulk,.false.,ind_2)
+    CALL param_get_range_vector('ind_2', found, nbulk, .FALSE., ind_2)
   ENDIF
   !
   ! energy
@@ -217,7 +260,7 @@ SUBROUTINE param_read
     ENDDO
     num_kpoint = SUM(kpath_pts)+1
 
-    ALLOCATE(plot_kpoint(2,num_kpoint), stat=ierr)
+    ALLOCATE(kpoints(2,num_kpoint), stat=ierr)
     ALLOCATE(xval(num_kpoint), stat=ierr)
 
     counter=0
@@ -229,29 +272,37 @@ SUBROUTINE param_read
         ELSE
           xval(counter)=xval(counter-1)+kpath_len(loop_spts)/real(kpath_pts(loop_spts),dp)
         ENDIF
-        plot_kpoint(:,counter)=bands_spec_points(:,2*loop_spts-1)+ &
+        kpoints(:,counter)=bands_spec_points(:,2*loop_spts-1)+ &
              (bands_spec_points(:,2*loop_spts)-bands_spec_points(:,2*loop_spts-1))* &
              (real(loop_i-1,dp)/real(kpath_pts(loop_spts),dp))
       ENDDO
     ENDDO
     xval(num_kpoint)=sum(kpath_len)
-    plot_kpoint(:,num_kpoint)=bands_spec_points(:,bands_num_spec_points)
+    kpoints(:,num_kpoint)=bands_spec_points(:,bands_num_spec_points)
   ELSE IF (kpoint_type == 'grid') THEN
+    k1_min = -0.5d0
+    k1_max = 0.5d0
+    k2_min = -0.5d0
+    k2_max = 0.5d0
     CALL param_get_keyword('nkgrid_1', found, i_value=nkgrid_1)
     IF (.NOT. found) CALL io_error('If kpoint_type is grid, nkgrid_1 must be set')
     CALL param_get_keyword('nkgrid_2', found, i_value=nkgrid_2)
     IF (.NOT. found) CALL io_error('If kpoint_type is grid, nkgrid_2 must be set')
+    CALL param_get_keyword('k1_min', found, r_value=k1_min)
+    CALL param_get_keyword('k1_max', found, r_value=k1_max)
+    CALL param_get_keyword('k2_min', found, r_value=k2_min)
+    CALL param_get_keyword('k2_max', found, r_value=k2_max)
     !
     num_kpoint = nkgrid_1 * nkgrid_2
-    ALLOCATE(plot_kpoint(2, num_kpoint), STAT=ierr)
+    ALLOCATE(kpoints(2, num_kpoint), STAT=ierr)
     ik = 0
-    DO loop_j = 1, nkgrid_1
-      DO loop_i = 1, nkgrid_2
+    DO ik1 = 1, nkgrid_1
+      DO ik2 = 1, nkgrid_2
         ik = ik + 1
-        plot_kpoint(1,ik) = &
-            MOD(REAL(loop_i, DP) / REAL(nkgrid_1, DP) + 0.5_dp, 1.0_dp) - 0.5_dp
-        plot_kpoint(2,ik) = &
-            MOD(REAL(loop_j, DP) / REAL(nkgrid_2, DP) + 0.5_dp, 1.0_dp) - 0.5_dp
+        kpoints(1,ik) = &
+            REAL(ik1-1, DP) / REAL(nkgrid_1-1, DP) * (k1_max - k1_min) + k1_min
+        kpoints(2,ik) = &
+            REAL(ik2-1, DP) / REAL(nkgrid_2-1, DP) * (k2_max - k2_min) + k2_min
       ENDDO
     ENDDO
   ELSE

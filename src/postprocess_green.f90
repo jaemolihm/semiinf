@@ -3,21 +3,20 @@ MODULE postprocess_green
 !------------------------------------------------------------------------
 !! Driver of postprocessing the Green function to calculate dos and spin-dos
 !------------------------------------------------------------------------
-  USE comms
-  USE parameters
-  USE hamiltonian
+  USE comms, ONLY : DP, io_error, is_root, cone, czero, pi
+  USE parameters, ONLY : seedname, is_ideal_surf, isspin, nbulk, nsurf, green_s, &
+    green_s1, green_b, omega
+  USE hamiltonian, ONLY : h01, h11, h12
   !
   IMPLICIT NONE
+  PRIVATE
   SAVE
   !
-  COMPLEX(DP), ALLOCATABLE :: green_s(:,:), green_s1(:,:), green_b(:,:), &
-    t_mat(:,:), s_mat(:,:), teff_mat(:,:), seff_mat(:,:)
+  COMPLEX(DP), ALLOCATABLE :: t_mat(:,:), s_mat(:,:), teff_mat(:,:), seff_mat(:,:)
   COMPLEX(DP), ALLOCATABLE :: green_layer(:,:,:)
-  COMPLEX(DP), ALLOCATABLE :: spnr(:,:,:,:)
-  REAL(DP), ALLOCATABLE :: srvec(:,:), sndegen(:)
-  INTEGER :: snrpts
   !
-  ! PUBLIC :: get_dos_s, get_dos_b, pp_green_allocate, pp_green_deallocate
+  PUBLIC :: get_dos_s, get_dos_b, get_dos_nlayer, set_transfer_mat, &
+    get_spin_s, pp_green_deallocate_green_layer, pp_green_setup
 CONTAINS
 !------------------------------------------------------------------------
 SUBROUTINE get_dos_s(dos_out)
@@ -46,7 +45,7 @@ SUBROUTINE get_dos_b(dos_out)
       WRITE(*,'(a,I)') "WARNING: negative DOS in green_b, i = ", i
       ! CALL io_error('Negative DOS in get_dos_s')
     END IF
-    dos_out = dos_out + AIMAG(green_b(i,i)) / PI
+    dos_out = dos_out + AIMAG(green_b(i,i)) / pi
   END DO
 END SUBROUTINE get_dos_b
 !------------------------------------------------------------------------
@@ -64,7 +63,7 @@ END SUBROUTINE get_dos_b
 !             WRITE(*,*) "negative DOS: green_s basis ", i, ", value: ", AIMAG(green_s(i,i))
 !             ! STOP
 !         END IF
-!         dos_out = dos_out + AIMAG(green_s(i,i)) / PI
+!         dos_out = dos_out + AIMAG(green_s(i,i)) / pi
 !     END DO
 ! END SUBROUTINE get_dos_up
 !------------------------------------------------------------------------
@@ -82,7 +81,7 @@ END SUBROUTINE get_dos_b
 !             WRITE(*,*) "negative DOS: green_s basis ", i, ", value: ", AIMAG(green_s(i,i))
 !             ! STOP
 !         END IF
-!         dos_out = dos_out + AIMAG(green_s(i,i)) / PI
+!         dos_out = dos_out + AIMAG(green_s(i,i)) / pi
 !     END DO
 ! END SUBROUTINE get_dos_dn
 !------------------------------------------------------------------------
@@ -98,12 +97,11 @@ END SUBROUTINE get_dos_b
 !     ALLOCATE(spnk(nsurf,nsurf))
 !     spin_out = 0.0_dp
 !     DO ispin = 1, 3
-!         CALL k_operator(snrpts, spnr(1:nsurf, 1:nsurf,:,ispin), srvec, sndegen, kx, ky, spnk)
 !         DO ii = 1, fin_nup
 !             i = fin_ind_up(ii)
 !             DO jj = 1, fin_nup
 !                 j = fin_ind_up(jj)
-!                 spin_out(ispin) = spin_out(ispin) + AIMAG(spnk(i,j)*green_s(j,i)) / PI
+!                 spin_out(ispin) = spin_out(ispin) + AIMAG(spnk(i,j)*green_s(j,i)) / pi
 !             END DO
 !         END DO
 !     END DO
@@ -122,12 +120,11 @@ END SUBROUTINE get_dos_b
 !     ALLOCATE(spnk(nsurf,nsurf))
 !     spin_out = 0.0_dp
 !     DO ispin = 1, 3
-!         CALL k_operator(snrpts, spnr(1:nsurf, 1:nsurf,:,ispin), srvec, sndegen, kx, ky, spnk)
 !         DO ii = 1, fin_ndn
 !             i = fin_ind_dn(ii)
 !             DO jj = 1, fin_ndn
 !                 j = fin_ind_dn(jj)
-!                 spin_out(ispin) = spin_out(ispin) + AIMAG(spnk(i,j)*green_s(j,i)) / PI
+!                 spin_out(ispin) = spin_out(ispin) + AIMAG(spnk(i,j)*green_s(j,i)) / pi
 !             END DO
 !         END DO
 !     END DO
@@ -138,10 +135,11 @@ END SUBROUTINE get_dos_b
 !------------------------------------------------------------------------
 SUBROUTINE get_dos_nlayer(nlayer, dos_out)
 !! Calculate Green function and DOS for sub-surface layers
+  IMPLICIT NONE
   INTEGER, INTENT(IN) :: nlayer
   REAL(DP), INTENT(OUT) :: dos_out(nlayer)
   !
-  INTEGER :: i, il, j, cnt
+  INTEGER :: i, il
   !
   IF (nlayer .lt. 1) RETURN
   !
@@ -165,22 +163,21 @@ END SUBROUTINE get_dos_nlayer
 !
 !------------------------------------------------------------------------
 SUBROUTINE get_spin_s(spin_out)
+  USE hamiltonian, ONLY : spn00
   IMPLICIT NONE
+  !
+  ! TODO: implement inter-layer spin matrix elements
   REAL(DP), INTENT(OUT) :: spin_out(3)
-  COMPLEX(DP), ALLOCATABLE :: spnk(:,:)
   INTEGER :: i, j, ispin
-  IF (.NOT. isspin) CALL io_error('isspin must be .true. to calculate spinDOS')
-  ALLOCATE(spnk(nsurf,nsurf))
+  IF (.NOT. isspin) CALL io_error('isspin must be .TRUE. to calculate spin-DOS')
   spin_out = 0.0_dp
   DO ispin = 1, 3
-    CALL k_operator(snrpts, spnr(1:nsurf, 1:nsurf,:,ispin), srvec, sndegen, kx, ky, spnk)
     DO i = 1, nsurf
       DO j = 1, nsurf
-        spin_out(ispin) = spin_out(ispin) + AIMAG(spnk(i,j)*green_s(j,i)) / PI
+        spin_out(ispin) = spin_out(ispin) + AIMAG(spn00(i,j,ispin) * green_s(j,i)) / pi
       END DO
     END DO
   END DO
-  DEALLOCATE(spnk)
 END SUBROUTINE
 !------------------------------------------------------------------------
 !
@@ -221,7 +218,7 @@ SUBROUTINE set_green_layer(nl)
   !
   ! Calculate green_layer using recurrence relations
   DO il = il_from, il_to
-    IF ((il == 1) .AND. isslab) THEN
+    IF (il == 1 .AND. (.NOT. is_ideal_surf)) THEN
       ! green_layer(:,:,1) = teff_mat + ( ( (teff_mat * h01^dagger) * green_s) * h01) * seff_mat
       ALLOCATE(temp_mat1(nbulk,nsurf))
       ALLOCATE(temp_mat2(nbulk,nsurf))
@@ -234,7 +231,7 @@ SUBROUTINE set_green_layer(nl)
       DEALLOCATE(temp_mat1)
       DEALLOCATE(temp_mat2)
       DEALLOCATE(temp_mat3)
-    ELSE IF((il == 1) .AND. .NOT.(isslab)) THEN
+    ELSE IF(il == 1 .AND. is_ideal_surf) THEN
       ! temp_mat1 = t_mat * green_s
       ! green_layer(:,:,1) = green_s + temp_mat1 * s_mat
       ALLOCATE(temp_mat1(nbulk,nbulk))
@@ -242,7 +239,7 @@ SUBROUTINE set_green_layer(nl)
       CALL ZGEMM('N','N',nbulk,nbulk,nbulk,cone, t_mat, nbulk, green_s, nbulk,czero, temp_mat1, nbulk)
       CALL ZGEMM('N','N',nbulk,nbulk,nbulk,cone, temp_mat1, nbulk, s_mat, nbulk,cone, green_layer(:,:,1), nbulk)
       DEALLOCATE(temp_mat1)
-    ELSE IF ((il > 1) .AND. isslab) THEN
+    ELSE IF (il > 1 .AND. (.NOT. is_ideal_surf)) THEN
       ! green_layer(:,:,il) = teff_mat + ( (teff_mat * h12^dagger) * green_layer(:,:,il-1)) * s_mat
       ALLOCATE(temp_mat1(nbulk,nbulk))
       ALLOCATE(temp_mat2(nbulk,nbulk))
@@ -252,7 +249,7 @@ SUBROUTINE set_green_layer(nl)
       CALL ZGEMM('N','N',nbulk,nbulk,nbulk,cone, temp_mat2, nbulk, s_mat, nbulk,cone, green_layer(:,:,il), nbulk)
       DEALLOCATE(temp_mat1)
       DEALLOCATE(temp_mat2)
-    ELSE ! il > 1 and .NOT. isslab
+    ELSE ! il > 1 and is_ideal_surf
       ! green_layer(:,:,il) = green_s + ( (t_mat * green_layer(:,:,il-1)) * s_mat )
       ALLOCATE(temp_mat1(nbulk,nbulk))
       CALL ZCOPY(nbulk*nbulk, green_s, 1, green_layer(:,:,il), 1)
@@ -273,8 +270,11 @@ END SUBROUTINE pp_green_deallocate_green_layer
 !
 !------------------------------------------------------------------------
 SUBROUTINE set_transfer_mat()
+  USE comms, ONLY : inv_omega_minus_mat
+  IMPLICIT NONE
+  !
   COMPLEX(DP), ALLOCATABLE :: temp_mat(:,:)
-  IF (isslab) THEN
+  IF (.NOT. is_ideal_surf) THEN
     ! t_mat = green_s1 * h12^dagger
     CALL ZGEMM('N','C',nbulk,nbulk,nbulk,cone,green_s1,nbulk,h12,nbulk,czero,t_mat,nbulk)
     ! s_mat = h12 * green_s1
@@ -292,7 +292,7 @@ SUBROUTINE set_transfer_mat()
     CALL ZGEMM('N','C',nbulk,nbulk,nbulk,cone, s_mat, nbulk, h12, nbulk,cone, temp_mat, nbulk)
     CALL inv_omega_minus_mat(nbulk, temp_mat, omega, seff_mat, 'set_transfer_mat for teff_mat')
     DEALLOCATE(temp_mat)
-  ELSE ! .NOT. isslab
+  ELSE ! is_ideal_surf
     ! t_mat = green_s * h12^dagger
     CALL ZGEMM('N','C',nbulk,nbulk,nbulk,cone,green_s,nbulk,h12,nbulk,czero,t_mat,nbulk)
     ! s_mat = h12 * green_s
@@ -325,101 +325,10 @@ SUBROUTINE pp_green_setup()
   ALLOCATE(green_b(nbulk,nbulk), STAT=ierr)
   ALLOCATE(t_mat(nbulk,nbulk), STAT=ierr)
   ALLOCATE(s_mat(nbulk,nbulk), STAT=ierr)
-  IF (isslab) ALLOCATE(green_s1(nbulk,nbulk), STAT=ierr)
-  IF (isslab) ALLOCATE(teff_mat(nbulk,nbulk))
-  IF (isslab) ALLOCATE(seff_mat(nbulk,nbulk))
+  IF (.NOT. is_ideal_surf) ALLOCATE(green_s1(nbulk,nbulk), STAT=ierr)
+  IF (.NOT. is_ideal_surf) ALLOCATE(teff_mat(nbulk,nbulk))
+  IF (.NOT. is_ideal_surf) ALLOCATE(seff_mat(nbulk,nbulk))
   IF (ierr /= 0) CALL io_error('Error during allocation in pp_green_allocate')
-  IF (isspin) CALL read_spin(0, spnr, srvec, sndegen, snrpts)
 END SUBROUTINE pp_green_setup
 !------------------------------------------------------------------------
-!
-!------------------------------------------------------------------------
-SUBROUTINE read_spin(nr3, spnr_nr3, rvec_nr3, ndegen_nr3, irpts_nr3)
-!! Read seedname_spnr.dat. Save spin elements <m0|S|nR> with R_z = nr3
-!! to variables spnr_nr3.
-  USE comms, ONLY : find_free_unit
-  IMPLICIT NONE
-  !
-  INTEGER, INTENT(IN) :: nr3
-  COMPLEX(DP), ALLOCATABLE, INTENT(OUT) :: spnr_nr3(:,:,:,:)
-  REAL(DP), ALLOCATABLE, INTENT(OUT)  :: rvec_nr3(:,:), ndegen_nr3(:)
-  INTEGER, INTENT(OUT) :: irpts_nr3
-  !
-  INTEGER :: iun
-  INTEGER :: irpts,iw,ni,nj,ierr,nrpts, ir1,ir2,ir3, num_spnr_wann
-  REAL(DP) :: sp1r, sp1i, sp2r, sp2i, sp3r, sp3i
-  COMPLEX(DP), ALLOCATABLE :: spnr_nr3_tmp(:,:,:,:)
-  REAL(DP), ALLOCATABLE :: ndegen(:), rvec_nr3_tmp(:,:), ndegen_nr3_tmp(:)
-  CHARACTER(LEN=80) :: buffer
-  LOGICAL :: ir3_checked
-  CHARACTER(LEN=256) :: filename
-  !
-  iun = find_free_unit()
-  filename = TRIM(seedname) // '_spnr.dat'
-  OPEN(UNIT=iun, FILE=TRIM(filename), ACTION='read', IOSTAT=ierr)
-  IF (ierr /= 0) CALL io_error('Error opening ' // TRIM(filename))
-  !
-  READ(iun,'(80a)', IOSTAT=ierr) buffer
-  READ(iun,'(80a)', IOSTAT=ierr) buffer
-  READ(buffer, *) num_spnr_wann
-  READ(iun,'(80a)', IOSTAT=ierr) buffer
-  READ(buffer, *) nrpts
-  IF(is_root) WRITE(*,*) 'begin reading ' // TRIM(filename)
-  IF(is_root) WRITE(*,*) 'num_spnr_wann = ', num_spnr_wann
-  IF(is_root) WRITE(*,*) 'nrpts = ', nrpts
-  !
-  ALLOCATE(ndegen(nrpts))
-  ALLOCATE(spnr_nr3_tmp(num_spnr_wann, num_spnr_wann, nrpts, 3))
-  ALLOCATE(rvec_nr3_tmp(2, nrpts))
-  ALLOCATE(ndegen_nr3_tmp(nrpts))
-
-  DO irpts = 1, (nrpts-1)/15
-    READ(iun, *, IOSTAT=ierr) ndegen((irpts-1)*15+1:(irpts-1)*15+15)
-  ENDDO
-  READ(iun, *, IOSTAT=ierr) ndegen(((nrpts-1)/15)*15+1:nrpts)
-  !
-  irpts_nr3 = 0
-  DO irpts = 1, nrpts
-    ir3_checked = .false.
-    DO iw = 1,num_spnr_wann**2
-      READ(iun, *, IOSTAT=ierr) ir1, ir2, ir3, ni, nj, &
-                                sp1r, sp1i, sp2r, sp2i, sp3r, sp3i
-      IF (ierr /= 0) CALL io_error('Error reading file '// TRIM(filename))
-      ! Choose lattice vectors with R_3 = nr3
-      IF (ir3 == nr3) THEN
-        IF (.NOT. ir3_checked) THEN
-          irpts_nr3 = irpts_nr3 + 1
-          ir3_checked = .true.
-        ENDIF
-        spnr_nr3_tmp(ni, nj, irpts_nr3, 1) = CMPLX(sp1r, sp1i, DP)
-        spnr_nr3_tmp(ni, nj, irpts_nr3, 2) = CMPLX(sp2r, sp2i, DP)
-        spnr_nr3_tmp(ni, nj, irpts_nr3, 3) = CMPLX(sp3r, sp3i, DP)
-        rvec_nr3_tmp(1, irpts_nr3) = ir1
-        rvec_nr3_tmp(2, irpts_nr3) = ir2
-        ndegen_nr3_tmp(irpts_nr3) = ndegen(irpts)
-      ENDIF
-    ENDDO
-  ENDDO
-  CLOSE(iun)
-  !
-  ! Change size of array to the read size
-  ! This is required because the number of R vectors with R3=nr3 is not known
-  ! before reading.
-  ALLOCATE(spnr_nr3(num_spnr_wann, num_spnr_wann, irpts_nr3, 3))
-  ALLOCATE(rvec_nr3(2, irpts_nr3))
-  ALLOCATE(ndegen_nr3(irpts_nr3))
-  spnr_nr3 = spnr_nr3_tmp(:,:,1:irpts_nr3,:)
-  rvec_nr3 = rvec_nr3_tmp(:,1:irpts_nr3)
-  ndegen_nr3 = ndegen_nr3_tmp(1:irpts_nr3)
-  DEALLOCATE(spnr_nr3_tmp)
-  DEALLOCATE(rvec_nr3_tmp)
-  DEALLOCATE(ndegen_nr3_tmp)
-  DEALLOCATE(ndegen)
-  !
-  IF(is_root) write(*,'("Spin_",I1," shape : ",4I5)') nr3, shape(spnr_nr3)
-  IF(is_root) write(*,*) 'end reading ' // TRIM(filename)
-  !
-END SUBROUTINE read_spin
-!------------------------------------------------------------------------
-
 END MODULE postprocess_green

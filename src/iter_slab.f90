@@ -3,10 +3,9 @@ module iter_slab
 !------------------------------------------------------------------------
 !! Driver of iteration for the bulk-only case (no surface modification)
 !------------------------------------------------------------------------
-  USE comms
-  USE parameters
-  USE hamiltonian, ONLY : h00, h01, h11, h12, omega
-  USE postprocess_green, ONLY : green_s, green_s1, green_b
+  USE comms, ONLY : DP, io_error, cone, czero
+  USE parameters, ONLY : nbulk, nsurf, green_s, green_s1, green_b, omega
+  USE hamiltonian, ONLY : h00, h01, h11, h12
   !
   IMPLICIT NONE
   SAVE
@@ -18,21 +17,26 @@ module iter_slab
     b_b_prev(:,:), a_s_prev(:,:), b_s_prev(:,:), temp_mat(:,:), &
     temp_mat_sb(:,:)
   INTEGER, ALLOCATABLE :: ipiv_s(:), ipiv_b(:)
-  ! private variables used in iter_slab_check_convergence
-  REAL(DP) :: conver_as, conver_ab, conver_bs, conver_bb
-  PUBLIC :: iter_slab_main, iter_slab_allocate, iter_slab_deallocate, &
-    iter_slab_green_finite
+  !
+  PUBLIC :: iter_slab_main, iter_slab_allocate, iter_slab_deallocate
 CONTAINS
 !------------------------------------------------------------------------
-SUBROUTINE iter_slab_main()
+SUBROUTINE iter_slab_main(flag_converged)
 !------------------------------------------------------------------------
 !! main driver of the iteration
 !------------------------------------------------------------------------
+  USE parameters, ONLY : max_n_iter
+  IMPLICIT NONE
+  !
+  LOGICAL, INTENT(INOUT) :: flag_converged
+  INTEGER :: n_iter
+  flag_converged = .FALSE.
+  !
   CALL iter_slab_initialize()
   ! ... iterate semi-infinite slab
   DO n_iter = 1, max_n_iter
     CALL iter_slab_update()
-    CALL iter_slab_check_convergence()
+    CALL iter_slab_check_convergence(flag_converged)
     IF (flag_converged) EXIT
   ENDDO
   CALL iter_slab_green()
@@ -56,17 +60,24 @@ END SUBROUTINE iter_slab_initialize
 !------------------------------------------------------------------------
 !
 !------------------------------------------------------------------------
-SUBROUTINE iter_slab_check_convergence()
+SUBROUTINE iter_slab_check_convergence(flag_converged)
 !------------------------------------------------------------------------
 !! check convergences of hopping matrices
 !------------------------------------------------------------------------
+  USE parameters, ONLY : hopping_tol
   IMPLICIT NONE
+  !
+  LOGICAL, INTENT(OUT) :: flag_converged
+  !! Set to True if convergence is reached. False otherwise.
+  !
   INTEGER :: i, j
+  REAL(DP) :: conver_as, conver_ab, conver_bs, conver_bb
+  !
   conver_ab = 0.0_dp
   conver_bb = 0.0_dp
   conver_as = 0.0_dp
   conver_bs = 0.0_dp
-  flag_converged = .false.
+  flag_converged = .FALSE.
   DO j = 1, nbulk
     DO i = 1, nbulk
       conver_ab = conver_ab + SQRT(REAL(a_b(i,j), DP)**2+AIMAG(a_b(i,j))**2)
@@ -85,7 +96,7 @@ SUBROUTINE iter_slab_check_convergence()
   END DO
   IF (conver_ab < hopping_tol .AND. conver_bb < hopping_tol &
     .AND. conver_as < hopping_tol .AND. conver_bs < hopping_tol) THEN
-    flag_converged = .true.
+    flag_converged = .TRUE.
   END IF
 !------------------------------------------------------------------------
 END SUBROUTINE iter_slab_check_convergence
@@ -96,6 +107,7 @@ SUBROUTINE iter_slab_update()
 !------------------------------------------------------------------------
 !! use recurrence relation to update matrices
 !------------------------------------------------------------------------
+  USE comms, ONLY : inv_omega_minus_mat
   IMPLICIT NONE
   ! inv_e_b = (omgea - e_b)^-1
   CALL inv_omega_minus_mat(nbulk, e_b, omega, inv_e_b, 'iter_bulk_update for inv_e_b')
@@ -139,19 +151,12 @@ END SUBROUTINE iter_slab_update
 !------------------------------------------------------------------------
 SUBROUTINE iter_slab_green()
 !! Calculate Green function after iteration
+  USE comms, ONLY : inv_omega_minus_mat
   IMPLICIT NONE
   CALL inv_omega_minus_mat(nsurf, e_s0, omega, green_s, 'iter_slab_green for green_s')
   CALL inv_omega_minus_mat(nbulk, e_s1, omega, green_s1, 'iter_slab_green for green_s1')
   CALL inv_omega_minus_mat(nbulk, e_b, omega, green_b, 'iter_slab_green for green_b')
 END SUBROUTINE iter_slab_green
-!------------------------------------------------------------------------
-!
-!------------------------------------------------------------------------
-SUBROUTINE iter_slab_green_finite()
-!! Calculate Green function of a finite slab by direct inversion
-  IMPLICIT NONE
-  CALL inv_omega_minus_mat(nsurf, h00, omega, green_s, 'iter_slab_green for green_s')
-END SUBROUTINE iter_slab_green_finite
 !------------------------------------------------------------------------
 !
 !------------------------------------------------------------------------

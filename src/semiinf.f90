@@ -3,19 +3,24 @@ PROGRAM semiinf
 !------------------------------------------------------------------------
 !! Main driver of the semiinf.x program
 !------------------------------------------------------------------------
-  USE comms
-  USE parameters
-  USE iter_bulk
-  USE iter_slab
-  USE postprocess_green
+  USE comms, ONLY : DP, is_root, mp_setup, mp_barrier, mp_end, world_comm, &
+    io_error, ci, cone, find_free_unit
+  USE parameters, ONLY : nbulk, isspin, is_ideal_surf, sigma, num_energy, energy, &
+    input_filename, param_read, param_write
+  USE iter_bulk, ONLY : iter_bulk_allocate
+  USE iter_slab, ONLY : iter_slab_allocate
+  USE hamiltonian, ONLY : hamiltonian_setup
+  USE postprocess_green, ONLY : pp_green_setup
   !
   IMPLICIT NONE
   !
+  LOGICAL :: flag_converged
+  !! Output of iterations for Green function. True if convergence is reached.
   INTEGER :: n_dos_layer = 0 ! FIXME: this should go to parameters.f90 as input parameter
-  INTEGER :: ik, irec, ik_start, ik_end, il
+  INTEGER :: ik, irec, ik_start, ik_end
   INTEGER :: iunsurf, iunbulk, iunsurfsx, iunsurfsy, iunsurfsz, iunlayer
   REAL(DP), ALLOCATABLE :: dos_s0(:), dos_b(:), dos_spn_s(:,:)
-  REAL(DP), ALLOCATABLE :: dos_up(:), dos_dn(:), dos_spn_s_up(:,:), dos_spn_s_dn(:,:)
+  ! REAL(DP), ALLOCATABLE :: dos_up(:), dos_dn(:), dos_spn_s_up(:,:), dos_spn_s_dn(:,:)
   REAL(DP), ALLOCATABLE :: dos_layer(:,:)
   !
   CALL mp_setup()
@@ -31,8 +36,11 @@ PROGRAM semiinf
   IF (is_root) CALL param_write()
   !
   ! Allocate array in modules
-  IF (isslab) CALL iter_slab_allocate()
-  IF ((.NOT. isslab)) CALL iter_bulk_allocate()
+  IF (is_ideal_surf) THEN
+    CALL iter_bulk_allocate()
+  ELSE
+    CALL iter_slab_allocate()
+  ENDIF
   CALL hamiltonian_setup()
   CALL pp_green_setup()
   !
@@ -92,11 +100,18 @@ SUBROUTINE distribute_kpoint()
 !------------------------------------------------------------------------
 !! distribute k points to processors for k-point parallelization
 !------------------------------------------------------------------------
+  USE comms, ONLY : num_procs, my_id, is_root
+  USE parameters, ONLY : num_kpoint
+  IMPLICIT NONE
+  !
   INTEGER :: q, r
   ! nk = q * (np-r) + (q+1) * r
   q = num_kpoint / num_procs
   r = num_kpoint - (num_procs * q)
-  WRITE(*, "(X,'There are', I8,' or ',I8,' k-points per processor')") q, q+1
+  IF (is_root) THEN
+    WRITE(*, "(X,'There are', I8,' or ',I8,' k-points per processor')") q, q+1
+  ENDIF
+  !
   IF (my_id < (num_procs - r)) THEN
     ik_end = q * (my_id + 1)
     ik_start = ik_end - q + 1
@@ -116,29 +131,39 @@ SUBROUTINE run_kpoint(ik)
 !! Main driver of the calculation for each k point.
 !! For given kx and ky, calculate Green function and write DOS to file
 !------------------------------------------------------------------------
-  USE hamiltonian, ONLY : omega, kx, ky
+  USE parameters, ONLY : kpoints, omega
+  USE hamiltonian, ONLY : hamiltonian_tb_to_k
+  USE iter_bulk, ONLY : iter_bulk_main
+  USE iter_slab, ONLY : iter_slab_main
+  USE postprocess_green, ONLY : get_dos_s, get_dos_b, get_dos_nlayer, &
+    set_transfer_mat, get_spin_s, pp_green_deallocate_green_layer
+  !
   IMPLICIT NONE
   INTEGER, INTENT(IN) :: ik
   !! Index of the k point to be calculated
+  REAL(DP) :: kx
+  !! k vector along x axis, in crystal coordinate
+  REAL(DP) :: ky
+  !! k vector along y axis, in crystal coordinate
   INTEGER :: ie, il
   !
   ! Set k-dependent hamiltonian
-  kx = plot_kpoint(1, ik)
-  ky = plot_kpoint(2, ik)
+  kx = kpoints(1, ik)
+  ky = kpoints(2, ik)
   WRITE(*, '("ik = ", I4, " kx = ", F6.3, " ky = ", F6.3)') ik, kx, ky
-  CALL hamiltonian_tb_to_k()
+  CALL hamiltonian_tb_to_k(kx, ky)
+  !
   ! Loop over energy points
   DO ie = 1, num_energy
     omega = energy(ie) * cone - sigma * ci
     ! Compute Green function by iteration
-    IF (isslab) THEN
-      CALL iter_slab_main()
+    IF (is_ideal_surf) THEN
+      CALL iter_bulk_main(flag_converged)
     ELSE
-      CALL iter_bulk_main()
+      CALL iter_slab_main(flag_converged)
     ENDIF
     IF (.NOT. flag_converged) &
-      WRITE(*, '("WARNING: DOS NOT converged, s=",ES8.1," N=",I2," ik=",I4," ie=",I5)') &
-        sigma, n_iter, ik, ie
+      WRITE(*, '("WARNING: DOS NOT converged, ik=",I8," ie=",I8)') ik, ie
     !
     ! Postprocess Green functions to calculate DOS, spin-DOS, etc.
     CALL set_transfer_mat()

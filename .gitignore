@@ -41,3 +41,8 @@ venv.bak/
 # executable
 *.x
 
+# examples
+examples/example*/*.dat
+examples/example*/*.out
+examples/example*/.ipynb_checkpoints/
+

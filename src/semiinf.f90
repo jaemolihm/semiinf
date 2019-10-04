@@ -17,10 +17,10 @@ PROGRAM semiinf
   LOGICAL :: flag_converged
   !! Output of iterations for Green function. True if convergence is reached.
   INTEGER :: n_dos_layer = 0 ! FIXME: this should go to parameters.f90 as input parameter
-  INTEGER :: ik, irec, ik_start, ik_end, il
+  INTEGER :: ik, irec, ik_start, ik_end
   INTEGER :: iunsurf, iunbulk, iunsurfsx, iunsurfsy, iunsurfsz, iunlayer
   REAL(DP), ALLOCATABLE :: dos_s0(:), dos_b(:), dos_spn_s(:,:)
-  REAL(DP), ALLOCATABLE :: dos_up(:), dos_dn(:), dos_spn_s_up(:,:), dos_spn_s_dn(:,:)
+  ! REAL(DP), ALLOCATABLE :: dos_up(:), dos_dn(:), dos_spn_s_up(:,:), dos_spn_s_dn(:,:)
   REAL(DP), ALLOCATABLE :: dos_layer(:,:)
   !
   CALL mp_setup()

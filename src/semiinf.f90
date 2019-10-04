@@ -11,6 +11,8 @@ PROGRAM semiinf
   !
   IMPLICIT NONE
   !
+  LOGICAL :: flag_converged
+  !! Output of iterations for Green function. True if convergence is reached.
   INTEGER :: n_dos_layer = 0 ! FIXME: this should go to parameters.f90 as input parameter
   INTEGER :: ik, irec, ik_start, ik_end, il
   INTEGER :: iunsurf, iunbulk, iunsurfsx, iunsurfsy, iunsurfsz, iunlayer
@@ -132,13 +134,13 @@ SUBROUTINE run_kpoint(ik)
     omega = energy(ie) * cone - sigma * ci
     ! Compute Green function by iteration
     IF (isslab) THEN
-      CALL iter_slab_main()
+      CALL iter_slab_main(flag_converged)
     ELSE
-      CALL iter_bulk_main()
+      CALL iter_bulk_main(flag_converged)
     ENDIF
     IF (.NOT. flag_converged) &
-      WRITE(*, '("WARNING: DOS NOT converged, s=",ES8.1," N=",I2," ik=",I4," ie=",I5)') &
-        sigma, n_iter, ik, ie
+      WRITE(*, '("WARNING: DOS NOT converged, s=",ES8.1," ik=",I4," ie=",I5)') &
+        sigma, ik, ie
     !
     ! Postprocess Green functions to calculate DOS, spin-DOS, etc.
     CALL set_transfer_mat()

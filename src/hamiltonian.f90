@@ -3,12 +3,13 @@ MODULE hamiltonian
 !------------------------------------------------------------------------
 !! Module for real space hamintonian
 !------------------------------------------------------------------------
-  USE comms
-  USE parameters
+  USE comms, ONLY : DP, is_root, io_error
+  USE parameters, ONLY : isslab, hr_stitching, nsurf, nbulk
   !
   IMPLICIT NONE
   !
   SAVE
+  PRIVATE
   !
   COMPLEX(DP), ALLOCATABLE, PUBLIC :: h00(:,:)
   COMPLEX(DP), ALLOCATABLE, PUBLIC :: h01(:,:)
@@ -35,7 +36,7 @@ MODULE hamiltonian
   !
   INTEGER :: num_hr_wann ! dimension of hamiltonian in seedname_hr.dat
   !
-  ! PUBLIC :: hamiltonian_set_hread, hamiltonian_set_hij
+  PUBLIC :: hamiltonian_setup, hamiltonian_tb_to_k
 CONTAINS
 !------------------------------------------------------------------------
 SUBROUTINE hamiltonian_setup()
@@ -43,6 +44,7 @@ SUBROUTINE hamiltonian_setup()
 !! ALLOCATE required variables, and read seedname_hr.dat for the required
 !! nr3, and save the information in hr*, rvec* ndegen*, nrpts*
 !------------------------------------------------------------------------
+  USE parameters, ONLY : seedname, bulk_rz, ind_1
   IMPLICIT NONE
   INTEGER :: i, ir, ierr
   !
@@ -56,7 +58,7 @@ SUBROUTINE hamiltonian_setup()
     ALLOCATE(h11(nbulk,nbulk), STAT=ierr)
     ALLOCATE(h12(nbulk,nbulk), STAT=ierr)
   ENDIF
-  IF (ierr /= 0) CALL io_error('Error in allocation in hamiltonian_setup')
+  IF (ierr /= 0) CALL io_error('Error during allocation in hamiltonian_setup')
   !
   ! reading seedname_hr.dat
   IF (isslab) THEN
@@ -66,19 +68,23 @@ SUBROUTINE hamiltonian_setup()
       CALL read_hamiltonian(0, hr0s, rvec0s, ndegen0s, nrpts0s, TRIM(seedname)//".slab")
       seedname = TRIM(seedname) // ".slab"
       !
-      ! calculate the required onsite energy shift
+      ! Calculate the required onsite energy shift
       ! bulk_shift = average(hr0s_onsite - hr0_onsite)
       bulk_shift = 0.0_dp
       DO ir = 1, nrpts0s
-        IF (rvec0s(1,ir)==0 .and. rvec0s(2,ir)==0) THEN
+        IF (rvec0s(1,ir) == 0 .AND. rvec0s(2,ir) == 0) THEN
           DO i = 1, nbulk
+            ! FIXME: remove ndegen0s(ir) because it is always 1
+            IF (ndegen0s(ir) /= 1) CALL io_error('Error: ndegen0s(ir) /= 1 in hamiltonian_setup')
             bulk_shift = bulk_shift + hr0s(ind_1(i), ind_1(i), ir) / ndegen0s(ir)
           ENDDO
         ENDIF
       ENDDO
       DO ir = 1, nrpts0
-        IF (rvec0(1,ir)==0 .and. rvec0(2,ir)==0) THEN
+        IF (rvec0(1,ir) == 0 .AND. rvec0(2,ir) == 0) THEN
           DO i = 1, nbulk
+            ! FIXME: remove ndegen0(ir) because it is always 1
+            IF (ndegen0(ir) /= 1) CALL io_error('Error: ndegen0(ir) /= 1 in hamiltonian_setup')
             bulk_shift = bulk_shift - hr0(i, i, ir) / ndegen0(ir)
           ENDDO
         ENDIF
@@ -103,6 +109,8 @@ SUBROUTINE hamiltonian_tb_to_k()
 !! sum the in-plane hamiltonian multiplied with the phase factor
 !! to create the tight-binding hamiltonian, hij.
 !------------------------------------------------------------------------
+  USE comms, ONLY : k_operator
+  USE parameters, ONLY : ind_0, ind_1, ind_2
   IMPLICIT NONE
   COMPLEX(DP), ALLOCATABLE :: htemp(:,:)
   INTEGER :: i

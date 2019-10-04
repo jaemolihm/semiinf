@@ -6,7 +6,7 @@ MODULE parameters
 !! This module contains parameters to control the actions of semiinf.x.
 !! Also have routines to read the parameters and write them out again.
 !------------------------------------------------------------------------
-  USE comms
+  USE comms, ONLY : DP, io_error
   IMPLICIT NONE
   !
   SAVE
@@ -88,8 +88,6 @@ MODULE parameters
   ! --------------------- other variables ---------------------
   ! These variables are not set during the input step.
   ! FIXME: move these to elsewhere?
-  LOGICAL :: flag_converged
-  INTEGER :: n_iter
   CHARACTER(LEN=256) :: input_filename
   !! name of the input file. Read as inline argument.
   !

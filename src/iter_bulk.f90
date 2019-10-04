@@ -3,8 +3,8 @@ MODULE iter_bulk
 !------------------------------------------------------------------------
 !! Driver of iteration for the bulk-only case (no surface modification)
 !------------------------------------------------------------------------
-  USE comms
-  USE parameters
+  USE comms, ONLY : DP, io_error, cone, czero
+  USE parameters, ONLY : nbulk
   USE hamiltonian, ONLY : h11, h12, omega
   USE postprocess_green, ONLY : green_s, green_b
   !
@@ -16,20 +16,26 @@ MODULE iter_bulk
   COMPLEX(DP), ALLOCATABLE :: a_b(:,:), b_b(:,:), e_s(:,:), e_b(:,:), &
     inv_e_b(:,:), a_b_prev(:,:), b_b_prev(:,:), temp_mat(:,:)
   INTEGER, ALLOCATABLE :: ipiv(:)
-  ! private variables used in iter_bulk_check_convergence
-  REAL(DP) :: conver1, conver2
+  !
   PUBLIC :: iter_bulk_main, iter_bulk_allocate, iter_bulk_deallocate
 CONTAINS
 !------------------------------------------------------------------------
-SUBROUTINE iter_bulk_main()
+SUBROUTINE iter_bulk_main(flag_converged)
 !------------------------------------------------------------------------
 !! main driver of the iteration
 !------------------------------------------------------------------------
+  USE parameters, ONLY : max_n_iter
+  IMPLICIT NONE
+  !
+  LOGICAL, INTENT(INOUT) :: flag_converged
+  INTEGER :: n_iter
+  flag_converged = .FALSE.
+  !
   CALL iter_bulk_initialize()
   ! ... iterate semi-infinite slab
   DO n_iter = 1, max_n_iter
     CALL iter_bulk_update()
-    CALL iter_bulk_check_convergence()
+    CALL iter_bulk_check_convergence(flag_converged)
     IF (flag_converged) EXIT
   ENDDO
   CALL iter_bulk_green()
@@ -50,15 +56,21 @@ END SUBROUTINE iter_bulk_initialize
 !------------------------------------------------------------------------
 !
 !------------------------------------------------------------------------
-SUBROUTINE iter_bulk_check_convergence()
+SUBROUTINE iter_bulk_check_convergence(flag_converged)
 !------------------------------------------------------------------------
 !! check convergences of hopping matrices
 !------------------------------------------------------------------------
+  USE parameters, ONLY : hopping_tol
   IMPLICIT NONE
+  LOGICAL, INTENT(OUT) :: flag_converged
+  !! Set to True if convergence is reached. False otherwise.
+  !
   INTEGER :: i, j
+  REAL(DP) :: conver1, conver2
+  !
   conver1 = 0.0_dp
   conver2 = 0.0_dp
-  flag_converged = .false.
+  flag_converged = .FALSE.
   DO j = 1, nbulk
     DO i = 1, nbulk
       conver1 = conver1 + SQRT(REAL(a_b(i,j), DP)**2 + AIMAG(a_b(i,j))**2)
@@ -66,7 +78,7 @@ SUBROUTINE iter_bulk_check_convergence()
     END DO
   END DO
   IF (conver1 < hopping_tol .AND. conver2 < hopping_tol) THEN
-    flag_converged = .true.
+    flag_converged = .TRUE.
   END IF
 !------------------------------------------------------------------------
 END SUBROUTINE iter_bulk_check_convergence
@@ -77,6 +89,7 @@ SUBROUTINE iter_bulk_update()
 !------------------------------------------------------------------------
 !! use recurrence relations to update matrices
 !------------------------------------------------------------------------
+  USE comms, ONLY : inv_omega_minus_mat
   IMPLICIT NONE
   ! inv_e_b = (omgea - e_b)^-1
   CALL inv_omega_minus_mat(nbulk, e_b, omega, inv_e_b, 'iter_bulk_update for inv_e_b')
@@ -106,6 +119,7 @@ END SUBROUTINE iter_bulk_update
 !------------------------------------------------------------------------
 SUBROUTINE iter_bulk_green()
 !! Calculate Green function after iteration
+  USE comms, ONLY : inv_omega_minus_mat
   IMPLICIT NONE
   CALL inv_omega_minus_mat(nbulk, e_s, omega, green_s, 'iter_bulk_green for green_s')
   CALL inv_omega_minus_mat(nbulk, e_b, omega, green_b, 'iter_bulk_green for green_b')

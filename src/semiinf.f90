@@ -84,7 +84,9 @@ PROGRAM semiinf
     CLOSE(iunsurfsy)
     CLOSE(iunsurfsz)
   ENDIF
-  CLOSE(iunlayer)
+  IF (n_dos_layer > 0) THEN
+    CLOSE(iunlayer)
+  ENDIF
   !
   CALL mp_barrier(world_comm)
   IF (is_root) THEN

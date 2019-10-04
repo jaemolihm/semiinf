@@ -158,8 +158,8 @@ SUBROUTINE k_operator(nrpts, oper_r, rvec, ndegen, kx, ky, oper_k)
   INTEGER, INTENT(IN) :: nrpts
   REAL(DP), INTENT(IN) :: kx, ky
   COMPLEX(DP), INTENT(IN) :: oper_r(:, :, :)
-  REAL(DP), INTENT(IN) :: rvec(:, :)
-  REAL(DP), INTENT(IN) :: ndegen(:)
+  INTEGER, INTENT(IN) :: rvec(:, :)
+  INTEGER, INTENT(IN) :: ndegen(:)
   COMPLEX(DP), INTENT(OUT) :: oper_k(:, :)
   !
   INTEGER :: ir
@@ -168,7 +168,7 @@ SUBROUTINE k_operator(nrpts, oper_r, rvec, ndegen, kx, ky, oper_k)
   oper_k = czero
   DO ir = 1, nrpts
       coeff_ik = EXP(ci * 2.d0 * pi * (kx*REAL(rvec(1,ir),DP) + ky*REAL(rvec(2,ir),DP)))
-      coeff_ik = coeff_ik / ndegen(ir)
+      coeff_ik = coeff_ik / REAL(ndegen(ir), DP)
       oper_k = oper_k + oper_r(:,:,ir) * coeff_ik
   ENDDO
 !--------------------------------------------------------------------------

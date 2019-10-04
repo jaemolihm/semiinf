@@ -14,9 +14,6 @@ MODULE postprocess_green
   !
   COMPLEX(DP), ALLOCATABLE :: t_mat(:,:), s_mat(:,:), teff_mat(:,:), seff_mat(:,:)
   COMPLEX(DP), ALLOCATABLE :: green_layer(:,:,:)
-  COMPLEX(DP), ALLOCATABLE :: spnr(:,:,:,:)
-  REAL(DP), ALLOCATABLE :: srvec(:,:), sndegen(:)
-  INTEGER :: snrpts
   !
   PUBLIC :: get_dos_s, get_dos_b, get_dos_nlayer, set_transfer_mat, &
     get_spin_s, pp_green_deallocate_green_layer, pp_green_setup
@@ -168,24 +165,21 @@ END SUBROUTINE get_dos_nlayer
 !
 !------------------------------------------------------------------------
 SUBROUTINE get_spin_s(spin_out)
-  USE comms, ONLY : k_operator
+  USE hamiltonian, ONLY : spn00
   IMPLICIT NONE
   !
+  ! TODO: implement inter-layer spin matrix elements
   REAL(DP), INTENT(OUT) :: spin_out(3)
-  COMPLEX(DP), ALLOCATABLE :: spnk(:,:)
   INTEGER :: i, j, ispin
-  IF (.NOT. isspin) CALL io_error('isspin must be .true. to calculate spinDOS')
-  ALLOCATE(spnk(nsurf,nsurf))
+  IF (.NOT. isspin) CALL io_error('isspin must be .TRUE. to calculate spin-DOS')
   spin_out = 0.0_dp
   DO ispin = 1, 3
-    CALL k_operator(snrpts, spnr(1:nsurf, 1:nsurf,:,ispin), srvec, sndegen, kx, ky, spnk)
     DO i = 1, nsurf
       DO j = 1, nsurf
-        spin_out(ispin) = spin_out(ispin) + AIMAG(spnk(i,j)*green_s(j,i)) / PI
+        spin_out(ispin) = spin_out(ispin) + AIMAG(spn00(i,j,ispin) * green_s(j,i)) / pi
       END DO
     END DO
   END DO
-  DEALLOCATE(spnk)
 END SUBROUTINE
 !------------------------------------------------------------------------
 !
@@ -337,97 +331,6 @@ SUBROUTINE pp_green_setup()
   IF (isslab) ALLOCATE(teff_mat(nbulk,nbulk))
   IF (isslab) ALLOCATE(seff_mat(nbulk,nbulk))
   IF (ierr /= 0) CALL io_error('Error during allocation in pp_green_allocate')
-  IF (isspin) CALL read_spin(0, spnr, srvec, sndegen, snrpts)
 END SUBROUTINE pp_green_setup
 !------------------------------------------------------------------------
-!
-!------------------------------------------------------------------------
-SUBROUTINE read_spin(nr3, spnr_nr3, rvec_nr3, ndegen_nr3, irpts_nr3)
-!! Read seedname_spnr.dat. Save spin elements <m0|S|nR> with R_z = nr3
-!! to variables spnr_nr3.
-  USE comms, ONLY : find_free_unit
-  IMPLICIT NONE
-  !
-  INTEGER, INTENT(IN) :: nr3
-  COMPLEX(DP), ALLOCATABLE, INTENT(OUT) :: spnr_nr3(:,:,:,:)
-  REAL(DP), ALLOCATABLE, INTENT(OUT)  :: rvec_nr3(:,:), ndegen_nr3(:)
-  INTEGER, INTENT(OUT) :: irpts_nr3
-  !
-  INTEGER :: iun
-  INTEGER :: irpts,iw,ni,nj,ierr,nrpts, ir1,ir2,ir3, num_spnr_wann
-  REAL(DP) :: sp1r, sp1i, sp2r, sp2i, sp3r, sp3i
-  COMPLEX(DP), ALLOCATABLE :: spnr_nr3_tmp(:,:,:,:)
-  REAL(DP), ALLOCATABLE :: ndegen(:), rvec_nr3_tmp(:,:), ndegen_nr3_tmp(:)
-  CHARACTER(LEN=80) :: buffer
-  LOGICAL :: ir3_checked
-  CHARACTER(LEN=256) :: filename
-  !
-  iun = find_free_unit()
-  filename = TRIM(seedname) // '_spnr.dat'
-  OPEN(UNIT=iun, FILE=TRIM(filename), ACTION='read', IOSTAT=ierr)
-  IF (ierr /= 0) CALL io_error('Error opening ' // TRIM(filename))
-  !
-  READ(iun,'(80a)', IOSTAT=ierr) buffer
-  READ(iun,'(80a)', IOSTAT=ierr) buffer
-  READ(buffer, *) num_spnr_wann
-  READ(iun,'(80a)', IOSTAT=ierr) buffer
-  READ(buffer, *) nrpts
-  IF(is_root) WRITE(*,*) 'begin reading ' // TRIM(filename)
-  IF(is_root) WRITE(*,*) 'num_spnr_wann = ', num_spnr_wann
-  IF(is_root) WRITE(*,*) 'nrpts = ', nrpts
-  !
-  ALLOCATE(ndegen(nrpts))
-  ALLOCATE(spnr_nr3_tmp(num_spnr_wann, num_spnr_wann, nrpts, 3))
-  ALLOCATE(rvec_nr3_tmp(2, nrpts))
-  ALLOCATE(ndegen_nr3_tmp(nrpts))
-
-  DO irpts = 1, (nrpts-1)/15
-    READ(iun, *, IOSTAT=ierr) ndegen((irpts-1)*15+1:(irpts-1)*15+15)
-  ENDDO
-  READ(iun, *, IOSTAT=ierr) ndegen(((nrpts-1)/15)*15+1:nrpts)
-  !
-  irpts_nr3 = 0
-  DO irpts = 1, nrpts
-    ir3_checked = .false.
-    DO iw = 1,num_spnr_wann**2
-      READ(iun, *, IOSTAT=ierr) ir1, ir2, ir3, ni, nj, &
-                                sp1r, sp1i, sp2r, sp2i, sp3r, sp3i
-      IF (ierr /= 0) CALL io_error('Error reading file '// TRIM(filename))
-      ! Choose lattice vectors with R_3 = nr3
-      IF (ir3 == nr3) THEN
-        IF (.NOT. ir3_checked) THEN
-          irpts_nr3 = irpts_nr3 + 1
-          ir3_checked = .true.
-        ENDIF
-        spnr_nr3_tmp(ni, nj, irpts_nr3, 1) = CMPLX(sp1r, sp1i, DP)
-        spnr_nr3_tmp(ni, nj, irpts_nr3, 2) = CMPLX(sp2r, sp2i, DP)
-        spnr_nr3_tmp(ni, nj, irpts_nr3, 3) = CMPLX(sp3r, sp3i, DP)
-        rvec_nr3_tmp(1, irpts_nr3) = ir1
-        rvec_nr3_tmp(2, irpts_nr3) = ir2
-        ndegen_nr3_tmp(irpts_nr3) = ndegen(irpts)
-      ENDIF
-    ENDDO
-  ENDDO
-  CLOSE(iun)
-  !
-  ! Change size of array to the read size
-  ! This is required because the number of R vectors with R3=nr3 is not known
-  ! before reading.
-  ALLOCATE(spnr_nr3(num_spnr_wann, num_spnr_wann, irpts_nr3, 3))
-  ALLOCATE(rvec_nr3(2, irpts_nr3))
-  ALLOCATE(ndegen_nr3(irpts_nr3))
-  spnr_nr3 = spnr_nr3_tmp(:,:,1:irpts_nr3,:)
-  rvec_nr3 = rvec_nr3_tmp(:,1:irpts_nr3)
-  ndegen_nr3 = ndegen_nr3_tmp(1:irpts_nr3)
-  DEALLOCATE(spnr_nr3_tmp)
-  DEALLOCATE(rvec_nr3_tmp)
-  DEALLOCATE(ndegen_nr3_tmp)
-  DEALLOCATE(ndegen)
-  !
-  IF(is_root) write(*,'("Spin_",I1," shape : ",4I5)') nr3, shape(spnr_nr3)
-  IF(is_root) write(*,*) 'end reading ' // TRIM(filename)
-  !
-END SUBROUTINE read_spin
-!------------------------------------------------------------------------
-
 END MODULE postprocess_green

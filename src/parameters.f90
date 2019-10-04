@@ -81,14 +81,20 @@ MODULE parameters
   REAL(DP), ALLOCATABLE :: energy(:)
   !! (num_energy) List of energy values to calculate DOS (in eV)
   INTEGER :: num_kpoint
-  !! number of sampled k-points
-  REAL(DP), ALLOCATABLE :: plot_kpoint(:,:)
+  !! number of sampled k-points, in crystal coordinates
+  REAL(DP), ALLOCATABLE :: kpoints(:,:)
   !! (3, num_kpoint) k points to calculate the spectral function
   !
   ! --------------------- other variables ---------------------
   ! These variables are not set during the input step.
   CHARACTER(LEN=256) :: input_filename
   !! name of the input file. Read as inline argument.
+  COMPLEX(DP), PUBLIC :: omega
+  !! energy - i * sigma
+  REAL(DP), PUBLIC :: kx
+  !! k vector along x axis, in crystal coordinate
+  REAL(DP), PUBLIC :: ky
+  !! k vector along y axis, in crystal coordinate
   COMPLEX(DP), ALLOCATABLE :: green_s(:,:)
   !! Green function for the surface principal layer
   COMPLEX(DP), ALLOCATABLE :: green_s1(:,:)
@@ -124,6 +130,7 @@ SUBROUTINE param_read
 !------------------------------------------------------------------------
 !! Read input parameters and calculate derived values
 !------------------------------------------------------------------------
+  USE comms, ONLY : pi
   IMPLICIT NONE
   LOGICAL :: found
   INTEGER :: ierr, i_temp, loop_spts, loop_i, loop_j, counter, ik, nlen_temp
@@ -230,7 +237,7 @@ SUBROUTINE param_read
     ENDDO
     num_kpoint = SUM(kpath_pts)+1
 
-    ALLOCATE(plot_kpoint(2,num_kpoint), stat=ierr)
+    ALLOCATE(kpoints(2,num_kpoint), stat=ierr)
     ALLOCATE(xval(num_kpoint), stat=ierr)
 
     counter=0
@@ -242,13 +249,13 @@ SUBROUTINE param_read
         ELSE
           xval(counter)=xval(counter-1)+kpath_len(loop_spts)/real(kpath_pts(loop_spts),dp)
         ENDIF
-        plot_kpoint(:,counter)=bands_spec_points(:,2*loop_spts-1)+ &
+        kpoints(:,counter)=bands_spec_points(:,2*loop_spts-1)+ &
              (bands_spec_points(:,2*loop_spts)-bands_spec_points(:,2*loop_spts-1))* &
              (real(loop_i-1,dp)/real(kpath_pts(loop_spts),dp))
       ENDDO
     ENDDO
     xval(num_kpoint)=sum(kpath_len)
-    plot_kpoint(:,num_kpoint)=bands_spec_points(:,bands_num_spec_points)
+    kpoints(:,num_kpoint)=bands_spec_points(:,bands_num_spec_points)
   ELSE IF (kpoint_type == 'grid') THEN
     CALL param_get_keyword('nkgrid_1', found, i_value=nkgrid_1)
     IF (.NOT. found) CALL io_error('If kpoint_type is grid, nkgrid_1 must be set')
@@ -256,14 +263,14 @@ SUBROUTINE param_read
     IF (.NOT. found) CALL io_error('If kpoint_type is grid, nkgrid_2 must be set')
     !
     num_kpoint = nkgrid_1 * nkgrid_2
-    ALLOCATE(plot_kpoint(2, num_kpoint), STAT=ierr)
+    ALLOCATE(kpoints(2, num_kpoint), STAT=ierr)
     ik = 0
     DO loop_j = 1, nkgrid_1
       DO loop_i = 1, nkgrid_2
         ik = ik + 1
-        plot_kpoint(1,ik) = &
+        kpoints(1,ik) = &
             MOD(REAL(loop_i, DP) / REAL(nkgrid_1, DP) + 0.5_dp, 1.0_dp) - 0.5_dp
-        plot_kpoint(2,ik) = &
+        kpoints(2,ik) = &
             MOD(REAL(loop_j, DP) / REAL(nkgrid_2, DP) + 0.5_dp, 1.0_dp) - 0.5_dp
       ENDDO
     ENDDO

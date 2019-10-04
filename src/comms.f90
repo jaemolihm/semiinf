@@ -167,7 +167,7 @@ SUBROUTINE k_operator(nrpts, oper_r, rvec, ndegen, kx, ky, oper_k)
   !
   oper_k = czero
   DO ir = 1, nrpts
-      coeff_ik = EXP(ci * 2.d0 * pi * (kx * rvec(1, ir) + ky * rvec(2, ir)))
+      coeff_ik = EXP(ci * 2.d0 * pi * (kx*REAL(rvec(1,ir),DP) + ky*REAL(rvec(2,ir),DP)))
       coeff_ik = coeff_ik / ndegen(ir)
       oper_k = oper_k + oper_r(:,:,ir) * coeff_ik
   ENDDO

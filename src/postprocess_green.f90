@@ -5,8 +5,8 @@ MODULE postprocess_green
 !------------------------------------------------------------------------
   USE comms, ONLY : DP, io_error, is_root, cone, czero, pi
   USE parameters, ONLY : seedname, isslab, isspin, nbulk, nsurf, green_s, &
-    green_s1, green_b
-  USE hamiltonian, ONLY : kx, ky, omega, h01, h11, h12
+    green_s1, green_b, kx, ky, omega
+  USE hamiltonian, ONLY : h01, h11, h12
   !
   IMPLICIT NONE
   PRIVATE
@@ -48,7 +48,7 @@ SUBROUTINE get_dos_b(dos_out)
       WRITE(*,'(a,I)') "WARNING: negative DOS in green_b, i = ", i
       ! CALL io_error('Negative DOS in get_dos_s')
     END IF
-    dos_out = dos_out + AIMAG(green_b(i,i)) / PI
+    dos_out = dos_out + AIMAG(green_b(i,i)) / pi
   END DO
 END SUBROUTINE get_dos_b
 !------------------------------------------------------------------------
@@ -66,7 +66,7 @@ END SUBROUTINE get_dos_b
 !             WRITE(*,*) "negative DOS: green_s basis ", i, ", value: ", AIMAG(green_s(i,i))
 !             ! STOP
 !         END IF
-!         dos_out = dos_out + AIMAG(green_s(i,i)) / PI
+!         dos_out = dos_out + AIMAG(green_s(i,i)) / pi
 !     END DO
 ! END SUBROUTINE get_dos_up
 !------------------------------------------------------------------------
@@ -84,7 +84,7 @@ END SUBROUTINE get_dos_b
 !             WRITE(*,*) "negative DOS: green_s basis ", i, ", value: ", AIMAG(green_s(i,i))
 !             ! STOP
 !         END IF
-!         dos_out = dos_out + AIMAG(green_s(i,i)) / PI
+!         dos_out = dos_out + AIMAG(green_s(i,i)) / pi
 !     END DO
 ! END SUBROUTINE get_dos_dn
 !------------------------------------------------------------------------
@@ -105,7 +105,7 @@ END SUBROUTINE get_dos_b
 !             i = fin_ind_up(ii)
 !             DO jj = 1, fin_nup
 !                 j = fin_ind_up(jj)
-!                 spin_out(ispin) = spin_out(ispin) + AIMAG(spnk(i,j)*green_s(j,i)) / PI
+!                 spin_out(ispin) = spin_out(ispin) + AIMAG(spnk(i,j)*green_s(j,i)) / pi
 !             END DO
 !         END DO
 !     END DO
@@ -129,7 +129,7 @@ END SUBROUTINE get_dos_b
 !             i = fin_ind_dn(ii)
 !             DO jj = 1, fin_ndn
 !                 j = fin_ind_dn(jj)
-!                 spin_out(ispin) = spin_out(ispin) + AIMAG(spnk(i,j)*green_s(j,i)) / PI
+!                 spin_out(ispin) = spin_out(ispin) + AIMAG(spnk(i,j)*green_s(j,i)) / pi
 !             END DO
 !         END DO
 !     END DO

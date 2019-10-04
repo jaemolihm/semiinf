@@ -128,8 +128,8 @@ SUBROUTINE run_kpoint(ik)
 !! Main driver of the calculation for each k point.
 !! For given kx and ky, calculate Green function and write DOS to file
 !------------------------------------------------------------------------
-  USE parameters, ONLY : plot_kpoint
-  USE hamiltonian, ONLY : omega, kx, ky, hamiltonian_tb_to_k
+  USE parameters, ONLY : kpoints, omega, kx, ky
+  USE hamiltonian, ONLY : hamiltonian_tb_to_k
   USE iter_bulk, ONLY : iter_bulk_main
   USE iter_slab, ONLY : iter_slab_main
   USE postprocess_green, ONLY : get_dos_s, get_dos_b, get_dos_nlayer, &
@@ -141,10 +141,10 @@ SUBROUTINE run_kpoint(ik)
   INTEGER :: ie, il
   !
   ! Set k-dependent hamiltonian
-  kx = plot_kpoint(1, ik)
-  ky = plot_kpoint(2, ik)
+  kx = kpoints(1, ik)
+  ky = kpoints(2, ik)
   WRITE(*, '("ik = ", I4, " kx = ", F6.3, " ky = ", F6.3)') ik, kx, ky
-  CALL hamiltonian_tb_to_k()
+  CALL hamiltonian_tb_to_k(kx, ky)
   ! Loop over energy points
   DO ie = 1, num_energy
     omega = energy(ie) * cone - sigma * ci

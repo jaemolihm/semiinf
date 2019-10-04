@@ -15,9 +15,6 @@ MODULE hamiltonian
   COMPLEX(DP), ALLOCATABLE, PUBLIC :: h01(:,:)
   COMPLEX(DP), ALLOCATABLE, PUBLIC :: h11(:,:)
   COMPLEX(DP), ALLOCATABLE, PUBLIC :: h12(:,:)
-  COMPLEX(DP), PUBLIC :: omega
-  REAL(DP), PUBLIC :: kx
-  REAL(DP), PUBLIC :: ky
   ! INTEGER, ALLOCATABLE, PUBLIC :: ind_surf(:)
   ! INTEGER, ALLOCATABLE, PUBLIC :: ind_bulk(:)
   !
@@ -104,7 +101,7 @@ END SUBROUTINE hamiltonian_setup
 !------------------------------------------------------------------------
 !
 !------------------------------------------------------------------------
-SUBROUTINE hamiltonian_tb_to_k()
+SUBROUTINE hamiltonian_tb_to_k(kx, ky)
 !------------------------------------------------------------------------
 !! sum the in-plane hamiltonian multiplied with the phase factor
 !! to create the tight-binding hamiltonian, hij.
@@ -112,6 +109,12 @@ SUBROUTINE hamiltonian_tb_to_k()
   USE comms, ONLY : k_operator
   USE parameters, ONLY : ind_0, ind_1, ind_2
   IMPLICIT NONE
+  !
+  REAL(DP), INTENT(IN) :: kx
+  !! k vector along x axis, in crystal coordinate
+  REAL(DP), INTENT(IN) :: ky
+  !! k vector along y axis, in crystal coordinate
+  !
   COMPLEX(DP), ALLOCATABLE :: htemp(:,:)
   INTEGER :: i
   !

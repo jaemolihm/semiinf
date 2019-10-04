@@ -4,8 +4,8 @@ module iter_slab
 !! Driver of iteration for the bulk-only case (no surface modification)
 !------------------------------------------------------------------------
   USE comms, ONLY : DP, io_error, cone, czero
-  USE parameters, ONLY : nbulk, nsurf, green_s, green_s1, green_b
-  USE hamiltonian, ONLY : h00, h01, h11, h12, omega
+  USE parameters, ONLY : nbulk, nsurf, green_s, green_s1, green_b, omega
+  USE hamiltonian, ONLY : h00, h01, h11, h12
   !
   IMPLICIT NONE
   SAVE

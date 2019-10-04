@@ -70,9 +70,27 @@ MODULE parameters
   !! TODO: enable the choice of the region to make the kpoint grid
   !! TODO: implement kpoint_type == 'file'
   INTEGER :: nkgrid_1
-  !! Number of k point grids along x direction. Used only if kpoint_type is grid
+  !! Number of k point grids along crystal lattice vector 1.
+  !! Used only if kpoint_type is grid
   INTEGER :: nkgrid_2
-  !! Number of k point grids along y direction. Used only if kpoint_type is grid
+  !! Number of k point grids along crystal lattice vector 2.
+  !! Used only if kpoint_type is grid
+  REAL(DP) :: k1_min
+  !! Minimum value of k along crystal lattice vector 1.
+  !! Used only if kpoint_type is grid.
+  !! Default is -0.5
+  REAL(DP) :: k1_max
+  !! Maximum value of k along crystal lattice vector 1.
+  !! Used only if kpoint_type is grid.
+  !! Default is +0.5
+  REAL(DP) :: k2_min
+  !! Minimum value of k along crystal lattice vector 2.
+  !! Used only if kpoint_type is grid.
+  !! Default is -0.5
+  REAL(DP) :: k2_max
+  !! Maximum value of k along crystal lattice vector 2.
+  !! Used only if kpoint_type is grid.
+  !! Default is +0.5
   !
   ! --------------------- derived variables ---------------------
   ! These variables are not directly read, but derived from the input variables
@@ -129,7 +147,7 @@ SUBROUTINE param_read
   USE comms, ONLY : pi
   IMPLICIT NONE
   LOGICAL :: found
-  INTEGER :: ierr, i_temp, loop_spts, loop_i, loop_j, counter, ik, nlen_temp
+  INTEGER :: ierr, i_temp, loop_spts, ik1, ik2, loop_i, counter, ik, nlen_temp
   REAL(DP) :: vec(2)
   REAL(DP), ALLOCATABLE :: xval(:), kpath_len(:)
   INTEGER, ALLOCATABLE :: kpath_pts(:)
@@ -262,21 +280,29 @@ SUBROUTINE param_read
     xval(num_kpoint)=sum(kpath_len)
     kpoints(:,num_kpoint)=bands_spec_points(:,bands_num_spec_points)
   ELSE IF (kpoint_type == 'grid') THEN
+    k1_min = -0.5d0
+    k1_max = 0.5d0
+    k2_min = -0.5d0
+    k2_max = 0.5d0
     CALL param_get_keyword('nkgrid_1', found, i_value=nkgrid_1)
     IF (.NOT. found) CALL io_error('If kpoint_type is grid, nkgrid_1 must be set')
     CALL param_get_keyword('nkgrid_2', found, i_value=nkgrid_2)
     IF (.NOT. found) CALL io_error('If kpoint_type is grid, nkgrid_2 must be set')
+    CALL param_get_keyword('k1_min', found, r_value=k1_min)
+    CALL param_get_keyword('k1_max', found, r_value=k1_max)
+    CALL param_get_keyword('k2_min', found, r_value=k2_min)
+    CALL param_get_keyword('k2_max', found, r_value=k2_max)
     !
     num_kpoint = nkgrid_1 * nkgrid_2
     ALLOCATE(kpoints(2, num_kpoint), STAT=ierr)
     ik = 0
-    DO loop_j = 1, nkgrid_1
-      DO loop_i = 1, nkgrid_2
+    DO ik1 = 1, nkgrid_1
+      DO ik2 = 1, nkgrid_2
         ik = ik + 1
         kpoints(1,ik) = &
-            MOD(REAL(loop_i, DP) / REAL(nkgrid_1, DP) + 0.5_dp, 1.0_dp) - 0.5_dp
+            REAL(ik1-1, DP) / REAL(nkgrid_1-1, DP) * (k1_max - k1_min) + k1_min
         kpoints(2,ik) = &
-            MOD(REAL(loop_j, DP) / REAL(nkgrid_2, DP) + 0.5_dp, 1.0_dp) - 0.5_dp
+            REAL(ik2-1, DP) / REAL(nkgrid_2-1, DP) * (k2_max - k2_min) + k2_min
       ENDDO
     ENDDO
   ELSE

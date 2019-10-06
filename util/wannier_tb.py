@@ -122,6 +122,13 @@ class TBdict:
 
         return hk
 
+    def get_ir_ind(self, rvec_target):
+        """Find the ir index with rvec = rvec_target"""
+        for ir in range(self.nrpts):
+            if np.all(self.rvec[:, ir] == rvec_target):
+                return ir
+        return None
+
     def subtract_fermi(self, efermi):
         """
         Subtract fermi energy from the diagonal (onsite) tight-binding

@@ -8,3 +8,5 @@ The tight-binding models used in the examples are generated either using the `wa
 ## List of examples
 * example01: s orbitals on a cubic lattice. Bulk and surface band structures and DOS.
     * Tight-binding model is generated using `util/wannier_tb.py`
+* example02: diamond (111) surface.
+    * Tight-binding model is generated from first-principles using `Quantum ESPRESSO` and `Wannier90`.

@@ -1,0 +1,31 @@
+&control
+  calculation = 'scf'
+  restart_mode = 'from_scratch',
+  prefix = 'diam.bulk'
+  pseudo_dir = '../pseudo/'
+  outdir = 'temp/'
+/
+&system
+  ibrav = 4
+  celldm(1) = 4.7659
+  celldm(3) = 2.44949
+  nat=  6
+  ntyp= 1
+  ecutwfc = 60.0
+  nbnd = 24
+/
+&electrons
+  mixing_beta = 0.7
+  conv_thr =  1.0d-10
+/
+ATOMIC_SPECIES
+ C  12.0  C.rel-pbesol-nc.UPF
+ATOMIC_POSITIONS {crystal}
+C  0.0000000  -0.3333333  -0.4583333
+C  0.0000000  -0.3333333  -0.2083333
+C -0.3333333   0.0000000  -0.1250000
+C -0.3333333   0.0000000   0.1250000
+C  0.3333333   0.3333333   0.2083333
+C  0.3333333   0.3333333   0.4583333
+K_POINTS {automatic}
+ 7 7 5 0 0 0

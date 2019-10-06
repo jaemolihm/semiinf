@@ -1,0 +1,28 @@
+seedname = diam
+
+is_ideal_surf = .false.
+hr_stitching = .true.
+nsurf = 36
+nbulk = 24
+# top surface
+ind_0 = 85-120
+ind_1 = 61-84
+bulk_rz = -1
+# bottom surface
+# ind_0 = 1-36
+# ind_1 = 37-60
+# bulk_rz = 1
+
+sigma = 1.0D-2
+#n_dos_layer = 1
+isspin = .false.
+
+HOPPING_TOL = 1.D-8
+MAX_N_ITER = 40
+
+dos_e_min = 5.0
+dos_e_max = 25.0
+dos_e_step = 1.0D-2
+
+kpoint_type = file
+kpoint_file = kpath.dat

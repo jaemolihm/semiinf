@@ -1,0 +1,8 @@
+&inputpp
+   outdir = 'temp/'
+   prefix = 'diam.bulk'
+   seedname = 'bulk/diam.bulk'
+   spin_component = 'none'
+   write_mmn = .true.
+   write_amn = .true.
+/

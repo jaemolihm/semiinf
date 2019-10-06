@@ -45,4 +45,9 @@ venv.bak/
 examples/example*/*.dat
 examples/example*/*.out
 examples/example*/.ipynb_checkpoints/
-
+examples/example*/temp/
+examples/example*/*/*.mmn
+examples/example*/*/*.amn
+examples/example*/*/*.chk
+examples/example*/*/*.nnkp
+examples/example*/*/*.eig

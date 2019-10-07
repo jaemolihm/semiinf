@@ -143,7 +143,7 @@ class TBdict:
             raise ValueError("rvec == [0, 0, 0] is not found")
         self.hr[ir,:,:] -= np.eye(self.nw) * efermi
 
-    def get_bands(self, kvecs, verbose=False):
+    def get_bands(self, kvecs, get_eigvecs=False, verbose=False):
         """
         For given array of k points, get H(k) and calculate the eigenvalues
         and return the band structure.
@@ -154,6 +154,8 @@ class TBdict:
         """
         num_k = kvecs.shape[1]
         energy = np.zeros((self.nw, num_k))
+        if get_eigvecs:
+            eigvecs = np.zeros((num_k, self.nw, self.nw), dtype=complex)
 
         for ik in range(num_k):
             if verbose:
@@ -162,8 +164,13 @@ class TBdict:
             ham = self.get_hk(kvecs[:,ik])
             eigval, eigvec = np.linalg.eigh(ham)
             energy[:,ik] = eigval
+            if get_eigvecs:
+                eigvecs[ik,:,:] = eigvec
 
-        return energy
+        if get_eigvecs:
+            return energy, eigvecs
+        else:
+            return energy
 
     def write_hr_dat(self, filename):
         """Write _hr.dat file in the format of wannier90.x output."""

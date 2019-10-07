@@ -4,14 +4,10 @@ is_ideal_surf = .false.
 hr_stitching = .true.
 nsurf = 48
 nbulk = 48
-# top surface (Ge terminated)
-ind_0 = 1-48
-ind_1 = 49-96
-bulk_rz = -1
 # bottom surface (Te terminated)
-# ind_0 = 193-240
-# ind_1 = 145-192
-# bulk_rz = 1
+ind_0 = 193-240
+ind_1 = 145-192
+bulk_rz = 1
 
 sigma = 1.0D-2
 #n_dos_layer = 1

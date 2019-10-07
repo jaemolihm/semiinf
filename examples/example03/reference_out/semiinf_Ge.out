@@ -1,0 +1,231 @@
+ ======================================================
+                  Welcome to semiinf.x !
+is_ideal_surf =  F
+hr_stitching =  T
+nsurf =           48
+nbulk =           48
+bulk_rz =           -1
+num_energy =          400
+num_kpoint =           99
+ begin reading gete.bulk_hr.dat
+ rvec_z("nr3") =            0
+ num_hr_wann =           48
+ nrpts =           93
+Hamiltonian_ 0 shape :    48   48   31
+ end reading gete.bulk_hr.dat
+ begin reading gete.bulk_hr.dat
+ rvec_z("nr3") =           -1
+ num_hr_wann =           48
+ nrpts =           93
+Hamiltonian_-1 shape :    48   48   31
+ end reading gete.bulk_hr.dat
+ begin reading gete.slab_hr.dat
+ rvec_z("nr3") =            0
+ num_hr_wann =          240
+ nrpts =           31
+ik =   29 kx =  0.000 ky =  0.214
+ik =   19 kx =  0.000 ky =  0.316
+ik =   23 kx =  0.000 ky =  0.276
+ik =   17 kx =  0.000 ky =  0.337
+ik =   27 kx =  0.000 ky =  0.235
+ik =   21 kx =  0.000 ky =  0.296
+ik =    5 kx =  0.000 ky =  0.459
+ik =   31 kx =  0.000 ky =  0.194
+ik =   25 kx =  0.000 ky =  0.255
+ik =   13 kx =  0.000 ky =  0.378
+Hamiltonian_ 0 shape :   240  240   31
+ end reading gete.slab_hr.dat
+ bulk_shift =  (-2.00406177083333,0.000000000000000E+000)
+ Note: this may(should) be small if util_match is used to generate slab hr.dat f
+ ile
+ik =    9 kx =  0.000 ky =  0.418
+ik =   15 kx =  0.000 ky =  0.357
+ik =   11 kx =  0.000 ky =  0.398
+ik =    7 kx =  0.000 ky =  0.439
+ik =    3 kx =  0.000 ky =  0.480
+ There are       2 or        3 k-points per processor
+ik =    1 kx =  0.000 ky =  0.500
+ik =   37 kx =  0.000 ky =  0.133
+ik =   75 kx =  0.340 ky = -0.170
+ik =   35 kx =  0.000 ky =  0.153
+ik =   39 kx =  0.000 ky =  0.112
+ik =   41 kx =  0.000 ky =  0.092
+ik =   45 kx =  0.000 ky =  0.051
+ik =   47 kx =  0.000 ky =  0.031
+ik =   33 kx =  0.000 ky =  0.173
+ik =   43 kx =  0.000 ky =  0.071
+ik =   59 kx =  0.122 ky = -0.061
+ik =   51 kx =  0.014 ky = -0.007
+ik =   53 kx =  0.041 ky = -0.020
+ik =   57 kx =  0.095 ky = -0.048
+ik =   49 kx =  0.000 ky =  0.010
+ik =   61 kx =  0.150 ky = -0.075
+ik =   63 kx =  0.177 ky = -0.088
+ik =   55 kx =  0.068 ky = -0.034
+ik =   71 kx =  0.286 ky = -0.143
+ik =   67 kx =  0.231 ky = -0.116
+ik =   79 kx =  0.395 ky = -0.197
+ik =   69 kx =  0.259 ky = -0.129
+ik =   77 kx =  0.367 ky = -0.184
+ik =   65 kx =  0.204 ky = -0.102
+ik =   73 kx =  0.313 ky = -0.156
+ik =   91 kx =  0.558 ky = -0.279
+ik =   87 kx =  0.503 ky = -0.252
+ik =   97 kx =  0.639 ky = -0.320
+ik =   94 kx =  0.599 ky = -0.299
+ik =   85 kx =  0.476 ky = -0.238
+ik =   81 kx =  0.422 ky = -0.211
+ik =   83 kx =  0.449 ky = -0.224
+ik =   89 kx =  0.531 ky = -0.265
+ik= 00097 done
+ik =   98 kx =  0.653 ky = -0.327
+ik= 00065 done
+ik =   66 kx =  0.218 ky = -0.109
+ik= 00094 done
+ik =   95 kx =  0.612 ky = -0.306
+ik= 00063 done
+ik =   64 kx =  0.190 ky = -0.095
+ik= 00067 done
+ik =   68 kx =  0.245 ky = -0.122
+ik= 00091 done
+ik =   92 kx =  0.571 ky = -0.286
+ik= 00049 done
+ik =   50 kx =  0.000 ky =  0.000
+ik= 00051 done
+ik =   52 kx =  0.027 ky = -0.014
+ik= 00089 done
+ik =   90 kx =  0.544 ky = -0.272
+ik= 00069 done
+ik =   70 kx =  0.272 ky = -0.136
+ik= 00071 done
+ik =   72 kx =  0.299 ky = -0.150
+ik= 00087 done
+ik =   88 kx =  0.517 ky = -0.259
+ik= 00085 done
+ik =   86 kx =  0.490 ky = -0.245
+ik= 00061 done
+ik =   62 kx =  0.163 ky = -0.082
+ik= 00047 done
+ik =   48 kx =  0.000 ky =  0.020
+ik= 00083 done
+ik =   84 kx =  0.463 ky = -0.231
+ik= 00073 done
+ik =   74 kx =  0.327 ky = -0.163
+ik= 00045 done
+ik =   46 kx =  0.000 ky =  0.041
+ik= 00059 done
+ik =   60 kx =  0.136 ky = -0.068
+ik= 00053 done
+ik =   54 kx =  0.054 ky = -0.027
+ik= 00081 done
+ik =   82 kx =  0.435 ky = -0.218
+ik= 00055 done
+ik =   56 kx =  0.082 ky = -0.041
+ik= 00043 done
+ik =   44 kx =  0.000 ky =  0.061
+ik= 00037 done
+ik =   38 kx =  0.000 ky =  0.122
+ik= 00057 done
+ik =   58 kx =  0.109 ky = -0.054
+ik= 00039 done
+ik =   40 kx =  0.000 ky =  0.102
+ik= 00075 done
+ik =   76 kx =  0.354 ky = -0.177
+ik= 00035 done
+ik =   36 kx =  0.000 ky =  0.143
+ik= 00041 done
+ik =   42 kx =  0.000 ky =  0.082
+ik= 00033 done
+ik =   34 kx =  0.000 ky =  0.163
+ik= 00031 done
+ik =   32 kx =  0.000 ky =  0.184
+ik= 00029 done
+ik =   30 kx =  0.000 ky =  0.204
+ik= 00079 done
+ik =   80 kx =  0.408 ky = -0.204
+ik= 00027 done
+ik =   28 kx =  0.000 ky =  0.224
+ik= 00077 done
+ik =   78 kx =  0.381 ky = -0.190
+ik= 00023 done
+ik =   24 kx =  0.000 ky =  0.265
+ik= 00025 done
+ik =   26 kx =  0.000 ky =  0.245
+ik= 00021 done
+ik =   22 kx =  0.000 ky =  0.286
+ik= 00019 done
+ik =   20 kx =  0.000 ky =  0.306
+ik= 00017 done
+ik =   18 kx =  0.000 ky =  0.327
+ik= 00015 done
+ik =   16 kx =  0.000 ky =  0.347
+ik= 00013 done
+ik =   14 kx =  0.000 ky =  0.367
+ik= 00011 done
+ik =   12 kx =  0.000 ky =  0.388
+ik= 00009 done
+ik =   10 kx =  0.000 ky =  0.408
+ik= 00007 done
+ik =    8 kx =  0.000 ky =  0.429
+ik= 00005 done
+ik =    6 kx =  0.000 ky =  0.449
+ik= 00001 done
+ik =    2 kx =  0.000 ky =  0.490
+ik= 00003 done
+ik =    4 kx =  0.000 ky =  0.469
+ik= 00098 done
+ik =   99 kx =  0.667 ky = -0.333
+ik= 00095 done
+ik =   96 kx =  0.626 ky = -0.313
+ik= 00064 done
+ik= 00066 done
+ik= 00050 done
+ik= 00092 done
+ik =   93 kx =  0.585 ky = -0.293
+ik= 00068 done
+ik= 00090 done
+ik= 00070 done
+ik= 00052 done
+ik= 00062 done
+ik= 00088 done
+ik= 00048 done
+ik= 00086 done
+ik= 00072 done
+ik= 00084 done
+ik= 00060 done
+ik= 00046 done
+ik= 00054 done
+ik= 00082 done
+ik= 00074 done
+ik= 00058 done
+ik= 00044 done
+ik= 00056 done
+ik= 00038 done
+ik= 00040 done
+ik= 00042 done
+ik= 00036 done
+ik= 00034 done
+ik= 00032 done
+ik= 00076 done
+ik= 00080 done
+ik= 00030 done
+ik= 00028 done
+ik= 00078 done
+ik= 00024 done
+ik= 00026 done
+ik= 00022 done
+ik= 00020 done
+ik= 00018 done
+ik= 00016 done
+ik= 00014 done
+ik= 00012 done
+ik= 00010 done
+ik= 00008 done
+ik= 00006 done
+ik= 00004 done
+ik= 00002 done
+ik= 00099 done
+ik= 00096 done
+ik= 00093 done
+ Calculation complete: semiinf exiting
+ ======================================================

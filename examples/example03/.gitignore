@@ -1,0 +1,17 @@
+bulk/*.out
+bulk/*.wout
+bulk/*.dat
+bulk/*.mmn
+bulk/*.amn
+bulk/*.chk
+bulk/*.nnkp
+bulk/*.eig
+slab/*.out
+slab/*.wout
+slab/*.dat
+slab/*.mmn
+slab/*.amn
+slab/*.chk
+slab/*.nnkp
+slab/*.eig
+temp/

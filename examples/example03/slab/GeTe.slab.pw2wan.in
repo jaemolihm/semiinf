@@ -1,0 +1,9 @@
+&inputpp
+  outdir = 'temp/'
+  prefix = 'GeTe.slab'
+  seedname = 'slab/GeTe.slab'
+
+  write_amn = .true.
+  write_mmn = .true.
+  write_spn = .true.
+/

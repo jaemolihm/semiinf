@@ -1,0 +1,10 @@
+&inputpp
+  outdir = 'temp/',
+  prefix = 'GeTe.bulk'
+  seedname = 'bulk/GeTe.bulk'
+
+  write_amn = .true.
+  write_mmn = .true.
+  write_spn = .true.
+/
+

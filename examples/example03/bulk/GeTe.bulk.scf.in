@@ -1,0 +1,40 @@
+ &control
+  calculation  = 'scf'
+  restart_mode = 'from_scratch'
+  prefix       = 'GeTe.bulk'
+  pseudo_dir   = '../pseudo/'
+  outdir       = 'temp/'
+ /
+ &system
+  ibrav        = 4
+  celldm(1)    = 7.8948
+  celldm(3)    = 2.5081
+  nat          = 6
+  ntyp         = 2
+  ecutwfc      = 50
+  noncolin     = .TRUE.
+  lspinorb     = .TRUE.
+  starting_magnetization(1) = 0.0
+  ! GeTe is a narrow-gap insulator, but we use smearing
+  ! since the number of k points is quite small.
+  occupations  = 'smearing'
+  smearing     = 'm-v'
+  degauss      = 0.02
+ /
+ &electrons
+  mixing_beta = 0.7
+  conv_thr    = 1.d-8
+ /
+ATOMIC_SPECIES
+ Ge 72.61 Ge.rel-pbesol-n-nc.UPF
+ Te 127.6 Te.rel-pbesol-n-nc.UPF
+ATOMIC_POSITIONS { crystal }
+Ge  0.33333333 -0.33333333  0.4058502
+Te -0.33333333  0.33333333  0.2608165
+Ge  0.00000000  0.00000000  0.0725168
+Te  0.33333333 -0.33333333 -0.0725168
+Ge -0.33333333  0.33333333 -0.2608165
+Te  0.00000000  0.00000000 -0.4058502
+K_POINTS automatic
+ 7 7 4 0 0 0
+

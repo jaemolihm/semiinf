@@ -82,27 +82,66 @@ class TBdict:
             return pickle.load(handle)
 
     @classmethod
-    def interpolate_tb(cls, tb1, tb2, alpha):
+    def interpolate_tb(cls, params, tbs, alpha):
         """
-        Lineraly interpolate between tb1 and tb2 by factor alpha.
-        tb = tb1 * (1.0 - alpha) + tb2 * alpha
+        tbs is np.array or list of _hr class
+        params is np.array or list of input parameters
+        which means interpolation between (parmas[0], tbs[0]), (parmas[1], tbs[1]), (parmas[2], tbs[2]), .....
+        """
+        """
+        It provides only linear, quadratic, cubic interpolation.
+        
+        **len(params) should be 2, 3, or 4**
+        
+        if len(params) is 2, it automately makes linear interpolation.
+        if len(params) is 3, it automately makes quadratic interpolation.
+        if len(params) is 4, it automately makes cubic interpolation.
         """
         import copy
+        
+        tbs=np.array(tbs)
+        
+        if len(params) != len(tbs):
+            raise ValueError("len(params) must be identical to len(tbs)")
+        if len(params) < 2 or len(params) > 4:
+            raise ValueError("len(params) must be 2, 3, or 4")
 
-        if tb1.nw != tb2.nw:
-            raise ValueError("nw must be identical to interpolate")
-        if tb1.nrpts != tb2.nrpts:
-            raise ValueError("nrpts must be identical to interpolate")
-        if np.any(tb1.rvec != tb2.rvec):
-            # TODO: allow change order
-            raise ValueError("rvec must be identical to interpolate")
-        if np.any(tb1.ndegen != tb2.ndegen):
-            # TODO: allow change order
-            raise ValueError("ndegen must be identical to interpolate")
+        for i in range(len(params)-1):
+            if tbs[i].nw != tbs[i+1].nw:
+                raise ValueError("nw must be identical to interpolate")
+            if tbs[i].nrpts != tbs[i+1].nrpts:
+                raise ValueError("nrpts must be identical to interpolate")
+            if np.any(tbs[i].rvec != tbs[i+1].rvec):
+                # TODO: allow change order
+                raise ValueError("rvec must be identical to interpolate")
+            if np.any(tbs[i].ndegen != tbs[i+1].ndegen):
+                # TODO: allow change order
+                raise ValueError("ndegen must be identical to interpolate")
 
-        hr_interpol = tb1.hr * (1.0 - alpha) + tb2.hr * alpha
-        return cls(nw=tb1.nw, nrpts=tb1.nrpts, rvec=tb1.rvec,
-                      ndegen=tb1.ndegen, hr=hr_interpol)
+
+        """Linear Interpolation"""
+        if len(params) == 2:
+            hr_interpol = tbs[0].hr * (alpha - params[1])/(params[0] - params[1]) +tbs[1].hr * (alpha - params[0])/(params[1] - params[0])
+
+
+        """Quadratic interpolation"""
+        if len(params) == 3:
+            hr_interpol = tbs[0].hr * (alpha - params[1])/(params[0] - params[1]) * (alpha - params[2])/(params[0] - params[2]) + \
+                        tbs[1].hr * (alpha - params[0])/(params[1] - params[0]) * (alpha - params[2])/(params[1] - params[2]) + \
+                        tbs[2].hr * (alpha - params[0])/(params[2] - params[0]) * (alpha - params[1])/(params[2] - params[1])
+
+        
+
+        """cubic interpolation"""
+        if len(params) == 4:
+            hr_interpol = tbs[0].hr * (alpha - params[1])/(params[0] - params[1]) * (alpha - params[2])/(params[0] - params[2]) * (alpha - params[3])/(params[0] - params[3]) + \
+                        tbs[1].hr * (alpha - params[0])/(params[1] - params[0]) * (alpha - params[2])/(params[1] - params[2]) * (alpha - params[3])/(params[1] - params[3]) + \
+                        tbs[2].hr * (alpha - params[0])/(params[2] - params[0]) * (alpha - params[1])/(params[2] - params[1]) * (alpha - params[3])/(params[2] - params[3]) + \
+                        tbs[3].hr * (alpha - params[0])/(params[3] - params[0]) * (alpha - params[1])/(params[3] - params[1]) * (alpha - params[2])/(params[3] - params[2])
+            
+        return cls(nw=tbs[0].nw, nrpts=tbs[0].nrpts, rvec=tbs[0].rvec,
+            ndegen=tbs[0].ndegen, hr=hr_interpol)
+
 
     def write_pkl(self, filename):
         """Write the TBdict object as file"""
